@@ -19,6 +19,8 @@ import com.uteexpress.service.HubService;
 import com.uteexpress.service.ServiceTypeService;
 import com.uteexpress.service.ShipmentService;
 import com.uteexpress.service.ShipmentStateMachine;
+import com.uteexpress.service.VnPayService;
+import jakarta.servlet.http.HttpServletRequest;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import org.springframework.data.domain.Page;
@@ -57,6 +59,7 @@ public class CustomerController {
     private final ServiceTypeService serviceTypeService;
     private final ShipmentService shipmentService;
     private final ShipmentStateMachine shipmentStateMachine;
+    private final VnPayService vnPayService;
 
     @GetMapping({"", "/"})
     public String dashboard(@AuthenticationPrincipal CustomUserDetails currentUser, Model model) {
@@ -145,6 +148,7 @@ public class CustomerController {
     public String createShipment(@Valid @ModelAttribute("shipmentForm") CreateShipmentRequest form,
                                  BindingResult bindingResult,
                                  @AuthenticationPrincipal CustomUserDetails currentUser,
+                                 HttpServletRequest request,
                                  Model model,
                                  RedirectAttributes redirectAttributes) {
         if (bindingResult.hasErrors()) {
@@ -160,15 +164,13 @@ public class CustomerController {
 
         try {
             Shipment saved = customerShipmentService.createShipment(currentUser.getId(), form);
-            // Phase 3: redirect to VNPay Sandbox payment URL when status == PENDING_PAYMENT
             if (saved.getStatus() == ShipmentStatus.PENDING_PAYMENT) {
-                redirectAttributes.addFlashAttribute("successMessage",
-                        "Đã tạo vận đơn " + saved.getTrackingCode() + " (Chờ thanh toán VNPay).");
-            } else {
-                redirectAttributes.addFlashAttribute("successMessage",
-                        "Tạo vận đơn " + saved.getTrackingCode() + " thành công! Bưu cục "
-                                + saved.getOriginHub().getName() + " sẽ sớm điều phối lấy hàng.");
+                String payUrl = vnPayService.createPaymentUrl(saved, resolveClientIp(request));
+                return "redirect:" + payUrl;
             }
+            redirectAttributes.addFlashAttribute("successMessage",
+                    "Tạo vận đơn " + saved.getTrackingCode() + " thành công! Bưu cục "
+                            + saved.getOriginHub().getName() + " sẽ sớm điều phối lấy hàng.");
             return "redirect:/customer/shipments/" + saved.getId();
         } catch (BusinessException ex) {
             model.addAttribute("errorMessage", ex.getMessage());
@@ -226,5 +228,20 @@ public class CustomerController {
         model.addAttribute("provinces", provinces);
         model.addAttribute("serviceTypes", serviceTypes);
         model.addAttribute("inspectionPolicies", InspectionPolicy.values());
+    }
+
+    private String resolveClientIp(HttpServletRequest request) {
+        if (request == null) {
+            return "127.0.0.1";
+        }
+        String forwardedFor = request.getHeader("X-Forwarded-For");
+        if (forwardedFor != null && !forwardedFor.isBlank()) {
+            return forwardedFor.split(",")[0].trim();
+        }
+        String realIp = request.getHeader("X-Real-IP");
+        if (realIp != null && !realIp.isBlank()) {
+            return realIp.trim();
+        }
+        return request.getRemoteAddr();
     }
 }

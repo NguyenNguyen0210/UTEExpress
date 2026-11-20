@@ -1,0 +1,179 @@
+<!DOCTYPE html>
+<html lang="vi"
+      xmlns:th="http://www.thymeleaf.org"
+      xmlns:layout="http://www.ultraq.net.nz/thymeleaf/layout"
+      layout:decorate="~{layout/base-public}">
+<head>
+    <title>Kết quả thanh toán VNPay</title>
+</head>
+<body>
+<main class="flex-grow-1 py-5" layout:fragment="content">
+    <div class="container">
+        <div class="row justify-content-center">
+            <div class="col-lg-7 col-xl-6">
+                <div class="card shadow-sm border-0 overflow-hidden">
+                    <!-- Top Status Banner -->
+                    <div class="p-4 text-center"
+                         th:classappend="${result.validSignature and result.paymentSuccess} ? 'bg-success-subtle' : (${!result.validSignature} ? 'bg-danger-subtle' : 'bg-warning-subtle')">
+                        <div class="mb-3">
+                            <span th:if="${result.validSignature and result.paymentSuccess}"
+                                  class="d-inline-flex align-items-center justify-content-center rounded-circle bg-success text-white"
+                                  style="width: 68px; height: 68px;">
+                                <i class="bi bi-check-lg fs-1"></i>
+                            </span>
+                            <span th:if="${!result.validSignature}"
+                                  class="d-inline-flex align-items-center justify-content-center rounded-circle bg-danger text-white"
+                                  style="width: 68px; height: 68px;">
+                                <i class="bi bi-shield-x fs-1"></i>
+                            </span>
+                            <span th:if="${result.validSignature and !result.paymentSuccess}"
+                                  class="d-inline-flex align-items-center justify-content-center rounded-circle bg-warning text-dark"
+                                  style="width: 68px; height: 68px;">
+                                <i class="bi bi-exclamation-triangle-fill fs-1"></i>
+                            </span>
+                        </div>
+
+                        <h4 class="fw-bold mb-1"
+                            th:if="${result.validSignature and result.paymentSuccess and !result.alreadyProcessed}"
+                            style="color: #15803D;">
+                            Thanh toán VNPay thành công!
+                        </h4>
+                        <h4 class="fw-bold mb-1"
+                            th:if="${result.validSignature and result.paymentSuccess and result.alreadyProcessed}"
+                            style="color: #15803D;">
+                            Giao dịch đã được xác nhận trước đó
+                        </h4>
+                        <h4 class="fw-bold mb-1 text-danger"
+                            th:if="${!result.validSignature}">
+                            Xác thực chữ ký VNPay thất bại
+                        </h4>
+                        <h4 class="fw-bold mb-1 text-warning-emphasis"
+                            th:if="${result.validSignature and !result.paymentSuccess}">
+                            Thanh toán chưa hoàn tất
+                        </h4>
+
+                        <p class="mb-0 small text-secondary" th:text="${result.message}">
+                            Thanh toán cước trực tuyến thành công
+                        </p>
+                    </div>
+
+                    <!-- Transaction & Shipment Details -->
+                    <div class="card-body p-4">
+                        <div th:if="${!result.validSignature}" class="alert alert-danger small mb-4">
+                            <i class="bi bi-shield-exclamation me-1"></i>
+                            Chữ ký bảo mật <code>HMAC-SHA512</code> từ VNPay không khớp (Mã phản hồi:
+                            <strong class="font-mono" th:text="${result.rspCode}">97</strong>).
+                            Hệ thống đã từ chối cập nhật dữ liệu để đảm bảo an toàn giao dịch.
+                        </div>
+
+                        <div th:if="${result.validSignature and result.paymentSuccess and result.alreadyProcessed}"
+                             class="alert alert-info small mb-4">
+                            <i class="bi bi-info-circle-fill me-1"></i>
+                            Giao dịch này đã được hệ thống ghi nhận thành công trước đó (xử lý idempotent — không ghi trùng lịch sử).
+                        </div>
+
+                        <div th:if="${shipment != null}" class="bg-light rounded-3 border p-3 mb-4 small">
+                            <div class="fw-bold text-primary text-uppercase mb-2" style="letter-spacing: 0.03em;">
+                                <i class="bi bi-receipt me-1"></i>Thông tin vận đơn &amp; giao dịch
+                            </div>
+
+                            <div class="d-flex justify-content-between py-1 border-bottom">
+                                <span class="text-muted">Mã vận đơn:</span>
+                                <span class="font-mono fw-bold text-primary" th:text="${shipment.trackingCode}">UTE261120A8K4P2</span>
+                            </div>
+
+                            <div class="d-flex justify-content-between py-1 border-bottom"
+                                 th:if="${shipment.originHub != null and shipment.destHub != null}">
+                                <span class="text-muted">Tuyến vận chuyển:</span>
+                                <span class="font-mono fw-semibold">
+                                    <span th:text="${shipment.originHub.code}">HCM-TD01</span>
+                                    <i class="bi bi-arrow-right text-warning mx-1"></i>
+                                    <span th:text="${shipment.destHub.code}">HN-CG01</span>
+                                </span>
+                            </div>
+
+                            <div class="d-flex justify-content-between py-1 border-bottom">
+                                <span class="text-muted">Số tiền cước phí:</span>
+                                <span class="font-mono fw-bold text-dark"
+                                      th:text="${shipment.totalFee != null ? #numbers.formatDecimal(shipment.totalFee, 1, 'POINT', 0, 'COMMA') + ' đ' : '0 đ'}">45.000 đ</span>
+                            </div>
+
+                            <div class="d-flex justify-content-between py-1 border-bottom"
+                                 th:if="${shipment.vnpTransactionNo != null or (vnpTransactionNo != null and !#strings.isEmpty(vnpTransactionNo))}">
+                                <span class="text-muted">Mã giao dịch VNPay:</span>
+                                <span class="font-mono fw-semibold"
+                                      th:text="${shipment.vnpTransactionNo != null ? shipment.vnpTransactionNo : vnpTransactionNo}">14523698</span>
+                            </div>
+
+                            <div class="d-flex justify-content-between py-1 border-bottom"
+                                 th:if="${vnpBankCode != null and !#strings.isEmpty(vnpBankCode)}">
+                                <span class="text-muted">Ngân hàng thanh toán:</span>
+                                <span class="font-mono fw-semibold" th:text="${vnpBankCode}">NCB</span>
+                            </div>
+
+                            <div class="d-flex justify-content-between py-1 border-bottom"
+                                 th:if="${shipment.paidAt != null}">
+                                <span class="text-muted">Thời gian xác nhận:</span>
+                                <span class="font-mono"
+                                      th:text="${#temporals.format(shipment.paidAt, 'dd/MM/yyyy HH:mm')}">20/11/2026 10:30</span>
+                            </div>
+
+                            <div class="d-flex justify-content-between py-1 border-bottom align-items-center">
+                                <span class="text-muted">Trạng thái thanh toán:</span>
+                                <span class="badge"
+                                      th:classappend="${shipment.paymentStatus.name() == 'PAID'} ? 'bg-success-subtle text-success' : 'bg-warning-subtle text-warning-emphasis'"
+                                      th:text="${shipment.paymentStatus.label}">Đã thanh toán</span>
+                            </div>
+
+                            <div class="d-flex justify-content-between pt-1 align-items-center">
+                                <span class="text-muted">Trạng thái vận đơn:</span>
+                                <span th:class="'badge rounded-pill ' + ${shipment.status.badgeClass}"
+                                      th:text="${shipment.status.label}">Chờ lấy hàng</span>
+                            </div>
+                        </div>
+
+                        <!-- Action Buttons: SUCCESS -->
+                        <div th:if="${result.validSignature and result.paymentSuccess}" class="d-flex flex-wrap justify-content-center gap-2">
+                            <a th:if="${shipment != null}"
+                               th:href="@{/shipments/{id}/waybill(id=${shipment.id}, size='A6')}"
+                               target="_blank"
+                               class="btn btn-ute-orange px-4">
+                                <i class="bi bi-printer-fill me-1"></i>In Tem PDF A6
+                            </a>
+                            <a th:if="${shipment != null}"
+                               th:href="@{/customer/shipments/{id}(id=${shipment.id})}"
+                               class="btn btn-ute-navy px-4">
+                                <i class="bi bi-file-earmark-text me-1"></i>Xem chi tiết đơn
+                            </a>
+                            <a th:href="@{/customer/shipments}" class="btn btn-outline-secondary">
+                                <i class="bi bi-list-ul me-1"></i>Quay về danh sách đơn
+                            </a>
+                        </div>
+
+                        <!-- Action Buttons: FAILED / CANCELLED / INVALID -->
+                        <div th:unless="${result.validSignature and result.paymentSuccess}" class="d-flex flex-wrap justify-content-center gap-2">
+                            <form th:if="${shipment != null and shipment.status.name() == 'PENDING_PAYMENT'}"
+                                  th:action="@{/customer/shipments/{id}/retry-vnpay(id=${shipment.id})}"
+                                  method="post"
+                                  class="m-0">
+                                <button type="submit" class="btn btn-ute-orange px-4">
+                                    <i class="bi bi-credit-card-2-front-fill me-1"></i>Thanh toán lại qua VNPay
+                                </button>
+                            </form>
+                            <a th:if="${shipment != null}"
+                               th:href="@{/customer/shipments/{id}(id=${shipment.id})}"
+                               class="btn btn-outline-danger">
+                                <i class="bi bi-eye me-1"></i>Xem chi tiết / Hủy đơn
+                            </a>
+                            <a th:href="@{/customer/shipments}" class="btn btn-outline-secondary px-4">
+                                <i class="bi bi-arrow-left me-1"></i>Quay về danh sách đơn
+                            </a>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</main>
+</body>
+</html>

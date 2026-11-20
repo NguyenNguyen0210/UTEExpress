@@ -40,17 +40,105 @@ body {
 
 /* Navbar & Brand */
 .navbar-ute {
-    background: linear-gradient(135deg, var(--ute-navy) 0%, var(--ute-navy-dark) 100%);
-    box-shadow: 0 2px 10px rgba(13, 71, 161, 0.15);
+    background-color: #ffffff;
+    border-bottom: 1px solid #E5E7EB;
+    box-shadow: 0 2px 12px rgba(15, 23, 42, 0.04);
+    padding-top: 0;
+    padding-bottom: 0;
+    min-height: 58px;
 }
 
+.brand-ute-text {
+    color: #1E293B;
+    font-weight: 800;
+    font-size: 1.32rem;
+    letter-spacing: -0.02em;
+}
+
+.portal-sidebar .brand-badge,
+.navbar-ute .brand-badge,
 .brand-badge {
-    background-color: var(--ute-orange);
+    background: linear-gradient(135deg, #FF7E1B 0%, #F97316 100%);
     color: #fff;
-    padding: 0.2rem 0.5rem;
+    padding: 0.16rem 0.52rem;
     margin-left: 0.25rem;
-    border-radius: 6px;
+    border-radius: 7px;
     font-weight: 700;
+    font-size: 1.02rem;
+}
+
+.public-nav-divider {
+    width: 1px;
+    height: 22px;
+    background-color: #CBD5E1;
+    margin-left: 1.1rem;
+    margin-right: 0.5rem;
+}
+
+.public-nav-links {
+    gap: 1.15rem;
+}
+
+.public-nav-links .nav-link {
+    color: #334155 !important;
+    font-weight: 500;
+    font-size: 0.91rem;
+    padding: 1.05rem 0.45rem !important;
+    position: relative;
+    display: inline-flex;
+    align-items: center;
+    gap: 0.42rem;
+    transition: color 0.15s ease;
+}
+
+.public-nav-links .nav-link:hover {
+    color: #0F172A !important;
+}
+
+.public-nav-links .nav-link.active {
+    color: #0F172A !important;
+    font-weight: 700;
+}
+
+.public-nav-links .nav-link.active::after {
+    content: '';
+    position: absolute;
+    left: 0.15rem;
+    right: 0.15rem;
+    bottom: 0;
+    height: 3px;
+    background-color: #F97316;
+    border-radius: 3px 3px 0 0;
+}
+
+.public-portal-btn {
+    background: linear-gradient(135deg, #FF8524 0%, #F97316 100%);
+    border: none;
+    border-radius: 9px;
+    padding: 0.45rem 0.95rem;
+    font-size: 0.86rem;
+    font-weight: 600;
+    box-shadow: 0 3px 10px rgba(249, 115, 22, 0.24);
+}
+
+.btn-public-icon {
+    width: 35px;
+    height: 35px;
+    border-radius: 9px;
+    border: 1px solid #CBD5E1;
+    background-color: #ffffff;
+    color: #334155;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    padding: 0;
+    transition: all 0.15s ease;
+}
+
+.btn-public-icon:hover {
+    background-color: #F8FAFC;
+    border-color: #94A3B8;
+    color: #0F172A;
 }
 
 /* Buttons */

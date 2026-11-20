@@ -1,0 +1,306 @@
+<!DOCTYPE html>
+<html lang="vi"
+      xmlns:th="http://www.thymeleaf.org"
+      xmlns:layout="http://www.ultraq.net.nz/thymeleaf/layout"
+      layout:decorate="~{layout/base-portal}">
+<head>
+    <title>Điều phối Vận đơn</title>
+    <style>
+        .staff-tabs .nav-link {
+            color: #475569;
+            font-weight: 500;
+            border-radius: 8px;
+            padding: 0.45rem 0.85rem;
+            display: inline-flex;
+            align-items: center;
+            gap: 0.4rem;
+            white-space: nowrap;
+        }
+        .staff-tabs .nav-link:hover {
+            background-color: #EEF2FF;
+            color: var(--ute-navy);
+        }
+        .staff-tabs .nav-link.active {
+            background-color: var(--ute-navy);
+            color: #ffffff;
+            font-weight: 600;
+        }
+        .staff-tabs .nav-link.active .badge {
+            background-color: rgba(255, 255, 255, 0.22) !important;
+            color: #ffffff !important;
+        }
+    </style>
+</head>
+<body>
+<h5 layout:fragment="page-title"><i class="bi bi-diagram-3 me-2"></i>Điều phối Vận đơn</h5>
+
+<div layout:fragment="content">
+    <!-- Scope & Search Bar -->
+    <div class="card mb-3">
+        <div class="card-body py-3">
+            <div class="row g-3 align-items-center justify-content-between">
+                <div class="col-lg-5">
+                    <div class="small text-muted">Phạm vi bưu cục</div>
+                    <div class="fw-bold text-primary font-mono" th:text="${hubLabel}">HCM-TD01 — Bưu cục Thủ Đức</div>
+                </div>
+                <div class="col-lg-7">
+                    <form th:action="@{/staff/shipments}" method="get" class="d-flex flex-wrap gap-2 justify-content-lg-end">
+                        <input type="hidden" name="tab" th:value="${activeTab}">
+                        <div class="input-group input-group-sm flex-grow-1" style="max-width: 420px;">
+                            <span class="input-group-text bg-white"><i class="bi bi-search text-muted"></i></span>
+                            <input type="text"
+                                   name="keyword"
+                                   th:value="${keyword}"
+                                   class="form-control"
+                                   placeholder="Tìm mã vận đơn, tên hoặc SĐT người gửi / nhận...">
+                        </div>
+                        <button type="submit" class="btn btn-ute-navy btn-sm px-3">
+                            <i class="bi bi-funnel me-1"></i>Tìm kiếm
+                        </button>
+                        <a th:if="${keyword != null and !#strings.isEmpty(keyword)}"
+                           th:href="@{/staff/shipments(tab=${activeTab})}"
+                           class="btn btn-outline-secondary btn-sm">
+                            <i class="bi bi-x-lg"></i> Xóa lọc
+                        </a>
+                    </form>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- 7 Operational Tabs with Badge Counts -->
+    <div class="card mb-3">
+        <div class="card-body py-2 px-3">
+            <ul class="nav nav-pills staff-tabs flex-nowrap overflow-auto gap-1 py-1">
+                <li class="nav-item">
+                    <a class="nav-link"
+                       th:classappend="${activeTab == 'all'} ? 'active'"
+                       th:href="@{/staff/shipments(tab='all', keyword=${keyword})}">
+                        <span>Tất cả</span>
+                        <span class="badge rounded-pill bg-secondary-subtle text-secondary"
+                              th:text="${tabCounts['all'] ?: 0}">0</span>
+                    </a>
+                </li>
+                <li class="nav-item">
+                    <a class="nav-link"
+                       th:classappend="${activeTab == 'pending_pickup'} ? 'active'"
+                       th:href="@{/staff/shipments(tab='pending_pickup', keyword=${keyword})}">
+                        <i class="bi bi-box-arrow-in-up"></i>
+                        <span>Chờ lấy hàng</span>
+                        <span class="badge rounded-pill bg-info-subtle text-info-emphasis"
+                              th:text="${tabCounts['pending_pickup'] ?: 0}">0</span>
+                    </a>
+                </li>
+                <li class="nav-item">
+                    <a class="nav-link"
+                       th:classappend="${activeTab == 'in_origin'} ? 'active'"
+                       th:href="@{/staff/shipments(tab='in_origin', keyword=${keyword})}">
+                        <i class="bi bi-building-check"></i>
+                        <span>Tại kho gửi</span>
+                        <span class="badge rounded-pill bg-primary-subtle text-primary"
+                              th:text="${tabCounts['in_origin'] ?: 0}">0</span>
+                    </a>
+                </li>
+                <li class="nav-item">
+                    <a class="nav-link"
+                       th:classappend="${activeTab == 'incoming_transit'} ? 'active'"
+                       th:href="@{/staff/shipments(tab='incoming_transit', keyword=${keyword})}">
+                        <i class="bi bi-truck"></i>
+                        <span>Trung chuyển đến</span>
+                        <span class="badge rounded-pill bg-primary-subtle text-primary"
+                              th:text="${tabCounts['incoming_transit'] ?: 0}">0</span>
+                    </a>
+                </li>
+                <li class="nav-item">
+                    <a class="nav-link"
+                       th:classappend="${activeTab == 'ready_delivery'} ? 'active'"
+                       th:href="@{/staff/shipments(tab='ready_delivery', keyword=${keyword})}">
+                        <i class="bi bi-bicycle"></i>
+                        <span>Sẵn sàng / Đang giao</span>
+                        <span class="badge rounded-pill badge-out-for-delivery"
+                              th:text="${tabCounts['ready_delivery'] ?: 0}">0</span>
+                    </a>
+                </li>
+                <li class="nav-item">
+                    <a class="nav-link"
+                       th:classappend="${activeTab == 'failed_return'} ? 'active'"
+                       th:href="@{/staff/shipments(tab='failed_return', keyword=${keyword})}">
+                        <i class="bi bi-arrow-return-left"></i>
+                        <span>Thất bại / Hoàn</span>
+                        <span class="badge rounded-pill bg-danger-subtle text-danger"
+                              th:text="${tabCounts['failed_return'] ?: 0}">0</span>
+                    </a>
+                </li>
+                <li class="nav-item">
+                    <a class="nav-link"
+                       th:classappend="${activeTab == 'completed'} ? 'active'"
+                       th:href="@{/staff/shipments(tab='completed', keyword=${keyword})}">
+                        <i class="bi bi-check-circle"></i>
+                        <span>Hoàn tất / Hủy</span>
+                        <span class="badge rounded-pill bg-success-subtle text-success"
+                              th:text="${tabCounts['completed'] ?: 0}">0</span>
+                    </a>
+                </li>
+            </ul>
+        </div>
+    </div>
+
+    <!-- Shipments Table -->
+    <div class="card">
+        <div class="table-responsive">
+            <table class="table table-hover align-middle mb-0">
+                <thead class="table-light">
+                <tr>
+                    <th>Mã vận đơn</th>
+                    <th>Định tuyến Hub</th>
+                    <th>Người gửi / Người nhận</th>
+                    <th>Shipper phụ trách</th>
+                    <th>Trạng thái</th>
+                    <th class="text-end">COD &amp; Cước</th>
+                    <th class="text-end">Thao tác</th>
+                </tr>
+                </thead>
+                <tbody>
+                <tr th:each="s : ${shipmentsPage.content}">
+                    <td>
+                        <a th:href="@{/staff/shipments/{id}(id=${s.id})}"
+                           class="tracking-code fw-bold text-primary text-decoration-none"
+                           th:text="${s.trackingCode}">UTE261120A8K4P2</a>
+                        <div class="d-flex flex-wrap gap-1 mt-1">
+                            <span class="badge bg-light text-secondary border small"
+                                  th:if="${s.serviceType != null}"
+                                  th:text="${s.serviceType.name}">Nhanh</span>
+                            <span class="badge bg-warning-subtle text-warning-emphasis border border-warning small"
+                                  th:if="${s.isFragile}">
+                                <i class="bi bi-exclamation-diamond-fill me-1"></i>Dễ vỡ
+                            </span>
+                        </div>
+                        <div class="small text-muted font-mono mt-1"
+                             th:text="${s.createdAt != null ? #temporals.format(s.createdAt, 'dd/MM/yyyy HH:mm') : ''}"></div>
+                    </td>
+                    <td>
+                        <div class="routing-code fw-semibold small text-dark">
+                            <span class="badge bg-primary-subtle text-primary"
+                                  th:text="${s.originHub != null ? s.originHub.code : '—'}">HCM-TD01</span>
+                            <i class="bi bi-arrow-right text-warning mx-1"></i>
+                            <span class="badge bg-primary-subtle text-primary"
+                                  th:text="${s.destHub != null ? s.destHub.code : '—'}">HN-CG01</span>
+                        </div>
+                        <div class="small text-muted mt-1">
+                            Hiện tại:
+                            <span class="font-mono fw-semibold text-dark"
+                                  th:text="${s.currentHub != null ? s.currentHub.code : '—'}">HCM-TD01</span>
+                        </div>
+                    </td>
+                    <td>
+                        <div class="small">
+                            <span class="badge bg-light text-secondary border me-1">Gửi</span>
+                            <span class="fw-semibold" th:text="${s.senderName}">Shop Hoàng Nam</span>
+                            <span class="text-muted font-mono" th:text="'· ' + ${s.senderPhone}"></span>
+                        </div>
+                        <div class="small mt-1">
+                            <span class="badge bg-light text-secondary border me-1">Nhận</span>
+                            <span class="fw-semibold" th:text="${s.receiverName}">Trần Minh Anh</span>
+                            <span class="text-muted font-mono" th:text="'· ' + ${s.receiverPhone}"></span>
+                        </div>
+                        <div class="small text-muted text-truncate" style="max-width: 240px;"
+                             th:text="${s.receiverDistrict + ', ' + s.receiverProvince}">Quận Cầu Giấy, Hà Nội</div>
+                    </td>
+                    <td>
+                        <div class="small">
+                            <span class="text-muted">Lấy:</span>
+                            <span th:if="${s.pickupShipper != null}" class="fw-medium" th:text="${s.pickupShipper.fullName}">Văn Hùng</span>
+                            <span th:if="${s.pickupShipper == null}" class="text-muted fst-italic">Chưa gán</span>
+                        </div>
+                        <div class="small mt-1">
+                            <span class="text-muted">Giao:</span>
+                            <span th:if="${s.deliveryShipper != null}" class="fw-medium" th:text="${s.deliveryShipper.fullName}">Đức Anh</span>
+                            <span th:if="${s.deliveryShipper == null}" class="text-muted fst-italic">Chưa gán</span>
+                        </div>
+                    </td>
+                    <td>
+                        <span th:class="'badge rounded-pill ' + ${s.status.badgeClass}"
+                              th:text="${s.status.label}">Chờ lấy hàng</span>
+                        <div class="small text-danger fw-semibold mt-1"
+                             th:if="${s.failedDeliveryCount != null and s.failedDeliveryCount > 0}"
+                             th:text="'Thất bại ' + ${s.failedDeliveryCount} + '/3'"></div>
+                    </td>
+                    <td class="text-end">
+                        <div class="money-mono small fw-bold" style="color: #EA580C;"
+                             th:text="'COD: ' + (${s.codAmount != null ? #numbers.formatDecimal(s.codAmount, 0, 'POINT', 0, 'COMMA') : '0'}) + ' đ'"></div>
+                        <div class="money-mono small text-dark"
+                             th:text="'Cước: ' + (${s.totalFee != null ? #numbers.formatDecimal(s.totalFee, 0, 'POINT', 0, 'COMMA') : '0'}) + ' đ'"></div>
+                        <div class="small text-muted">
+                            <span th:text="${s.payerType != null ? s.payerType.label : ''}"></span>
+                            <span th:if="${s.paymentStatus != null}"
+                                  th:text="' · ' + ${s.paymentStatus.label}"></span>
+                        </div>
+                    </td>
+                    <td class="text-end">
+                        <div class="d-inline-flex gap-1">
+                            <a th:href="@{/staff/shipments/{id}(id=${s.id})}" class="btn btn-ute-navy btn-sm">
+                                <i class="bi bi-sliders me-1"></i>Điều phối
+                            </a>
+                            <a th:href="@{/shipments/{id}/waybill(id=${s.id}, size='A6')}"
+                               target="_blank"
+                               class="btn btn-outline-secondary btn-sm"
+                               title="In tem vận đơn A6">
+                                <i class="bi bi-printer"></i>
+                            </a>
+                        </div>
+                    </td>
+                </tr>
+                <tr th:if="${shipmentsPage.empty}">
+                    <td colspan="7" class="text-center py-5">
+                        <i class="bi bi-inbox text-muted display-5 d-block mb-2"></i>
+                        <div class="fw-semibold text-dark">Không có vận đơn nào trong mục này</div>
+                        <div class="small text-muted mt-1">
+                            Thử chuyển sang tab nghiệp vụ khác hoặc xóa từ khóa tìm kiếm để xem toàn bộ đơn thuộc bưu cục.
+                        </div>
+                        <a th:if="${activeTab != 'all' or (keyword != null and !#strings.isEmpty(keyword))}"
+                           th:href="@{/staff/shipments(tab='all')}"
+                           class="btn btn-outline-primary btn-sm mt-3">
+                            Xem tất cả vận đơn
+                        </a>
+                    </td>
+                </tr>
+                </tbody>
+            </table>
+        </div>
+
+        <!-- Pagination -->
+        <div class="card-footer bg-white d-flex flex-wrap align-items-center justify-content-between gap-2 py-3"
+             th:if="${shipmentsPage.totalPages > 1}">
+            <div class="small text-muted">
+                Hiển thị trang <strong th:text="${shipmentsPage.number + 1}">1</strong> /
+                <strong th:text="${shipmentsPage.totalPages}">1</strong>
+                (<span th:text="${shipmentsPage.totalElements}">0</span> vận đơn)
+            </div>
+            <nav aria-label="Phân trang vận đơn">
+                <ul class="pagination pagination-sm mb-0">
+                    <li class="page-item" th:classappend="${shipmentsPage.first} ? 'disabled'">
+                        <a class="page-link"
+                           th:href="@{/staff/shipments(tab=${activeTab}, keyword=${keyword}, page=${shipmentsPage.number - 1})}">
+                            <i class="bi bi-chevron-left"></i>
+                        </a>
+                    </li>
+                    <li class="page-item"
+                        th:each="p : ${#numbers.sequence(0, shipmentsPage.totalPages - 1)}"
+                        th:classappend="${p == shipmentsPage.number} ? 'active'">
+                        <a class="page-link"
+                           th:href="@{/staff/shipments(tab=${activeTab}, keyword=${keyword}, page=${p})}"
+                           th:text="${p + 1}">1</a>
+                    </li>
+                    <li class="page-item" th:classappend="${shipmentsPage.last} ? 'disabled'">
+                        <a class="page-link"
+                           th:href="@{/staff/shipments(tab=${activeTab}, keyword=${keyword}, page=${shipmentsPage.number + 1})}">
+                            <i class="bi bi-chevron-right"></i>
+                        </a>
+                    </li>
+                </ul>
+            </nav>
+        </div>
+    </div>
+</div>
+</body>
+</html>

@@ -1,0 +1,748 @@
+<!DOCTYPE html>
+<html lang="vi"
+      xmlns:th="http://www.thymeleaf.org"
+      xmlns:layout="http://www.ultraq.net.nz/thymeleaf/layout"
+      layout:decorate="~{layout/base-portal}">
+<head>
+    <title th:text="'Điều phối ' + ${shipment.trackingCode}">Chi tiết Vận đơn</title>
+    <style>
+        .live-dot {
+            display: inline-block;
+            width: 8px;
+            height: 8px;
+            border-radius: 50%;
+            background-color: #16A34A;
+            animation: livePulse 1.6s infinite;
+        }
+        @keyframes livePulse {
+            0% { box-shadow: 0 0 0 0 rgba(22, 163, 74, 0.7); }
+            70% { box-shadow: 0 0 0 6px rgba(22, 163, 74, 0); }
+            100% { box-shadow: 0 0 0 0 rgba(22, 163, 74, 0); }
+        }
+        .pod-thumb {
+            max-height: 220px;
+            object-fit: cover;
+            cursor: zoom-in;
+            transition: transform 0.15s ease;
+        }
+        .pod-thumb:hover {
+            transform: scale(1.02);
+        }
+        .action-bar-box {
+            background: linear-gradient(135deg, #EFF6FF 0%, #FFF7ED 100%);
+            border: 1px solid #BFDBFE;
+            border-radius: 10px;
+        }
+    </style>
+</head>
+<body>
+<h5 layout:fragment="page-title">
+    <i class="bi bi-box-seam me-2"></i>Chi tiết &amp; Điều phối Vận đơn
+</h5>
+
+<div layout:fragment="content">
+    <!-- Top Back Link -->
+    <div class="mb-3 d-flex flex-wrap align-items-center justify-content-between gap-2">
+        <a th:href="@{/staff/shipments}" class="btn btn-outline-secondary btn-sm">
+            <i class="bi bi-arrow-left me-1"></i>Quay lại danh sách điều phối
+        </a>
+        <div class="d-flex flex-wrap gap-2">
+            <a th:href="@{/shipments/{id}/waybill(id=${shipment.id}, size='A6')}"
+               target="_blank"
+               class="btn btn-outline-primary btn-sm">
+                <i class="bi bi-printer me-1"></i>In Tem PDF A6
+            </a>
+            <a th:href="@{/shipments/{id}/waybill(id=${shipment.id}, size='A5')}"
+               target="_blank"
+               class="btn btn-outline-primary btn-sm">
+                <i class="bi bi-file-earmark-pdf me-1"></i>In A5
+            </a>
+            <button th:if="${canCancel}"
+                    type="button"
+                    class="btn btn-outline-danger btn-sm"
+                    data-bs-toggle="modal"
+                    data-bs-target="#cancelShipmentModal">
+                <i class="bi bi-x-circle me-1"></i>Hủy vận đơn
+            </button>
+        </div>
+    </div>
+
+    <!-- Header Summary & Operational Action Bar Card -->
+    <div class="card mb-4">
+        <div class="card-header py-3 d-flex flex-wrap align-items-center justify-content-between gap-3">
+            <div class="d-flex flex-wrap align-items-center gap-2">
+                <span class="tracking-code fs-4 fw-bold text-primary" th:text="${shipment.trackingCode}">UTE261120A8K4P2</span>
+                <button type="button"
+                        class="btn btn-outline-secondary btn-sm py-0 px-2"
+                        title="Sao chép mã vận đơn"
+                        th:attr="data-copy-code=${shipment.trackingCode}"
+                        onclick="copyTrackingCode(this)">
+                    <i class="bi bi-clipboard"></i>
+                </button>
+                <span class="badge bg-primary-subtle text-primary"
+                      th:if="${shipment.serviceType != null}"
+                      th:text="${shipment.serviceType.name}">Nhanh</span>
+                <span class="badge bg-warning-subtle text-warning-emphasis border border-warning"
+                      th:if="${shipment.isFragile}">
+                    <i class="bi bi-exclamation-diamond-fill me-1"></i>HÀNG DỄ VỠ
+                </span>
+            </div>
+
+            <div class="d-flex flex-wrap align-items-center gap-2">
+                <span class="badge bg-light text-dark border routing-code py-2 px-3">
+                    <span th:text="${shipment.originHub != null ? shipment.originHub.code : '—'}">HCM-TD01</span>
+                    <i class="bi bi-arrow-right text-warning mx-1"></i>
+                    <span th:text="${shipment.destHub != null ? shipment.destHub.code : '—'}">HN-CG01</span>
+                    <span class="ms-2 badge"
+                          th:classappend="${isSameHub} ? 'bg-success-subtle text-success' : 'bg-info-subtle text-info-emphasis'"
+                          th:text="${isSameHub} ? 'Nội vùng' : 'Liên tỉnh'">Liên tỉnh</span>
+                </span>
+                <span class="badge bg-success-subtle text-success border border-success-subtle px-2 py-2 d-inline-flex align-items-center gap-1">
+                    <span class="live-dot"></span>
+                    <span>Live</span>
+                </span>
+                <span th:id="'status-badge-' + ${shipment.trackingCode}"
+                      th:class="'badge rounded-pill px-3 py-2 ' + ${shipment.status.badgeClass}"
+                      th:text="${shipment.status.label}">Chờ lấy hàng</span>
+            </div>
+        </div>
+
+        <!-- Staff Action Bar (Shows ONLY valid next-step controls for current status & hub) -->
+        <div class="card-body">
+            <div class="action-bar-box p-3">
+                <div class="d-flex align-items-center gap-2 mb-2">
+                    <i class="bi bi-lightning-charge-fill text-warning fs-5"></i>
+                    <span class="fw-bold text-primary">Bảng Điều phối Tác vụ Tiếp theo</span>
+                    <span class="badge bg-danger-subtle text-danger ms-auto"
+                          th:if="${shipment.failedDeliveryCount != null and shipment.failedDeliveryCount > 0}"
+                          th:text="'Đã giao thất bại: ' + ${shipment.failedDeliveryCount} + '/3 lần'"></span>
+                </div>
+
+                <!-- 1. CREATED -> Assign Pickup Shipper -->
+                <div th:if="${canAssignPickup}" class="mt-2">
+                    <form th:action="@{/staff/shipments/{id}/assign-pickup(id=${shipment.id})}"
+                          method="post"
+                          class="row g-2 align-items-end js-disable-on-submit">
+                        <div class="col-md-7 col-lg-6">
+                            <label class="form-label small fw-semibold mb-1">
+                                Chọn Shipper lấy hàng tại <span class="font-mono text-primary" th:text="${shipment.originHub.code}">HCM-TD01</span>
+                            </label>
+                            <select name="shipperId" class="form-select" required th:disabled="${#lists.isEmpty(originShippers)}">
+                                <option value="">-- Chọn Shipper trực thuộc bưu cục gửi --</option>
+                                <option th:each="sp : ${originShippers}"
+                                        th:value="${sp.id}"
+                                        th:text="${sp.fullName + ' — ' + sp.phone}"></option>
+                            </select>
+                            <div class="small text-danger mt-1" th:if="${#lists.isEmpty(originShippers)}">
+                                <i class="bi bi-exclamation-triangle me-1"></i>Hiện chưa có Shipper đang hoạt động tại bưu cục gửi.
+                            </div>
+                        </div>
+                        <div class="col-md-5 col-lg-auto">
+                            <button type="submit" class="btn btn-ute-orange px-4" th:disabled="${#lists.isEmpty(originShippers)}">
+                                <i class="bi bi-person-check-fill me-1"></i>Phân công Shipper lấy hàng
+                            </button>
+                        </div>
+                    </form>
+                </div>
+
+                <!-- 2. PICKED_UP -> Arrive at Origin Hub -->
+                <div th:if="${canArriveOrigin}" class="mt-2">
+                    <form th:action="@{/staff/shipments/{id}/arrive-origin(id=${shipment.id})}"
+                          method="post"
+                          class="row g-2 align-items-end js-disable-on-submit">
+                        <div class="col-md-7">
+                            <label class="form-label small fw-semibold mb-1">Ghi chú kiểm đếm nhập kho gửi (tùy chọn)</label>
+                            <input type="text" name="note" class="form-control" placeholder="VD: Đã cân kiểm tra, đóng bao tại bưu cục gửi...">
+                        </div>
+                        <div class="col-md-5 col-lg-auto">
+                            <button type="submit" class="btn btn-ute-navy px-4">
+                                <i class="bi bi-box-arrow-in-down me-1"></i>Xác nhận nhập bưu cục gửi
+                            </button>
+                        </div>
+                    </form>
+                </div>
+
+                <!-- 3. IN_ORIGIN_HUB (Inter-hub) -> Dispatch Transit -->
+                <div th:if="${canDispatchTransit}" class="mt-2">
+                    <form th:action="@{/staff/shipments/{id}/dispatch-transit(id=${shipment.id})}"
+                          method="post"
+                          class="row g-2 align-items-end js-disable-on-submit">
+                        <div class="col-md-7">
+                            <label class="form-label small fw-semibold mb-1">
+                                Ghi chú xuất kho trung chuyển đến
+                                <span class="font-mono text-primary" th:text="${shipment.destHub.code + ' — ' + shipment.destHub.name}">HN-CG01</span>
+                            </label>
+                            <input type="text" name="note" class="form-control" placeholder="VD: Chuyến xe tải tuyến Bắc - Nam số 02...">
+                        </div>
+                        <div class="col-md-5 col-lg-auto">
+                            <button type="submit" class="btn btn-ute-orange px-4">
+                                <i class="bi bi-truck me-1"></i>Xuất kho trung chuyển liên tỉnh
+                            </button>
+                        </div>
+                    </form>
+                </div>
+
+                <!-- 4a. IN_ORIGIN_HUB (Intra-hub) -> Move Directly to Ready Delivery (IN_DEST_HUB) -->
+                <div th:if="${canMoveToReadyDelivery}" class="mt-2">
+                    <form th:action="@{/staff/shipments/{id}/arrive-dest(id=${shipment.id})}"
+                          method="post"
+                          class="row g-2 align-items-end js-disable-on-submit">
+                        <div class="col-md-7">
+                            <label class="form-label small fw-semibold mb-1">
+                                Đơn nội vùng (cùng bưu cục <span class="font-mono text-primary" th:text="${shipment.destHub.code}">HCM-TD01</span>) — Ghi chú (tùy chọn)
+                            </label>
+                            <input type="text" name="note" class="form-control" placeholder="VD: Chuyển thẳng khu vực chia chọn giao hàng nội vùng...">
+                        </div>
+                        <div class="col-md-5 col-lg-auto">
+                            <button type="submit" class="btn btn-ute-orange px-4">
+                                <i class="bi bi-fast-forward-fill me-1"></i>Chuyển sẵn sàng giao (Nội vùng)
+                            </button>
+                        </div>
+                    </form>
+                </div>
+
+                <!-- 4b. IN_TRANSIT -> Arrive at Dest Hub -->
+                <div th:if="${canReceiveFromTransit}" class="mt-2">
+                    <form th:action="@{/staff/shipments/{id}/arrive-dest(id=${shipment.id})}"
+                          method="post"
+                          class="row g-2 align-items-end js-disable-on-submit">
+                        <div class="col-md-7">
+                            <label class="form-label small fw-semibold mb-1">
+                                Ghi chú nhập kho bưu cục nhận <span class="font-mono text-primary" th:text="${shipment.destHub.code}">HN-CG01</span> (tùy chọn)
+                            </label>
+                            <input type="text" name="note" class="form-control" placeholder="VD: Đã nhận kiện hàng nguyên vẹn từ xe trung chuyển...">
+                        </div>
+                        <div class="col-md-5 col-lg-auto">
+                            <button type="submit" class="btn btn-ute-navy px-4">
+                                <i class="bi bi-building-check me-1"></i>Xác nhận nhập bưu cục nhận
+                            </button>
+                        </div>
+                    </form>
+                </div>
+
+                <!-- 5. IN_DEST_HUB or DELIVERY_FAILED (< 3) -> Assign Delivery Shipper -->
+                <div th:if="${canAssignDelivery}" class="mt-2">
+                    <form th:action="@{/staff/shipments/{id}/assign-delivery(id=${shipment.id})}"
+                          method="post"
+                          class="row g-2 align-items-end js-disable-on-submit">
+                        <div class="col-md-7 col-lg-6">
+                            <label class="form-label small fw-semibold mb-1">
+                                Chọn Shipper giao hàng tại <span class="font-mono text-primary" th:text="${shipment.destHub.code}">HN-CG01</span>
+                            </label>
+                            <select name="shipperId" class="form-select" required th:disabled="${#lists.isEmpty(destShippers)}">
+                                <option value="">-- Chọn Shipper trực thuộc bưu cục nhận --</option>
+                                <option th:each="sp : ${destShippers}"
+                                        th:value="${sp.id}"
+                                        th:selected="${shipment.deliveryShipper != null and shipment.deliveryShipper.id == sp.id}"
+                                        th:text="${sp.fullName + ' — ' + sp.phone}"></option>
+                            </select>
+                            <div class="small text-danger mt-1" th:if="${#lists.isEmpty(destShippers)}">
+                                <i class="bi bi-exclamation-triangle me-1"></i>Hiện chưa có Shipper đang hoạt động tại bưu cục nhận.
+                            </div>
+                        </div>
+                        <div class="col-md-5 col-lg-auto d-flex flex-wrap gap-2">
+                            <button type="submit" class="btn btn-ute-orange px-4" th:disabled="${#lists.isEmpty(destShippers)}">
+                                <i class="bi bi-bicycle me-1"></i>
+                                <span th:if="${shipment.status.name() == 'DELIVERY_FAILED'}"
+                                      th:text="'Sắp xếp giao lại (Lần ' + ${(shipment.failedDeliveryCount ?: 0) + 1} + '/3)'">Sắp xếp giao lại</span>
+                                <span th:unless="${shipment.status.name() == 'DELIVERY_FAILED'}">Phân công Shipper giao hàng</span>
+                            </button>
+                        </div>
+                    </form>
+                </div>
+
+                <!-- 6. DELIVERY_FAILED -> Start Return (always allowed for destHub; mandatory when >= 3 attempts) -->
+                <div th:if="${canStartReturn}" class="mt-3 pt-3 border-top border-primary-subtle">
+                    <div th:if="${!canRedeliver}" class="alert alert-danger py-2 px-3 small mb-2 d-flex align-items-center gap-2">
+                        <i class="bi bi-exclamation-octagon-fill fs-5"></i>
+                        <div>
+                            <strong>Đã giao thất bại đủ 3/3 lần (Quy định BR-08):</strong>
+                            Hệ thống đã khóa nút giao lại. Vui lòng kích hoạt quy trình hoàn hàng về người gửi.
+                        </div>
+                    </div>
+                    <div class="d-flex flex-wrap align-items-center justify-content-between gap-2">
+                        <div class="small text-secondary">
+                            Nếu người nhận từ chối nhận hàng hoặc đã hết số lần phát, bấm kích hoạt hoàn hàng về bưu cục gửi.
+                        </div>
+                        <button type="button"
+                                class="btn btn-danger btn-sm px-3"
+                                data-bs-toggle="modal"
+                                data-bs-target="#startReturnModal">
+                            <i class="bi bi-arrow-return-left me-1"></i>Kích hoạt hoàn hàng
+                        </button>
+                    </div>
+                </div>
+
+                <!-- 7. RETURNING -> Complete Return -->
+                <div th:if="${canCompleteReturn}" class="mt-2">
+                    <form th:action="@{/staff/shipments/{id}/complete-return(id=${shipment.id})}"
+                          method="post"
+                          class="row g-2 align-items-end js-disable-on-submit">
+                        <div class="col-md-7">
+                            <label class="form-label small fw-semibold mb-1">Ghi chú bàn giao hoàn trả cho người gửi (tùy chọn)</label>
+                            <input type="text" name="note" class="form-control" placeholder="VD: Chủ shop đã ký nhận lại kiện hàng nguyên vẹn...">
+                        </div>
+                        <div class="col-md-5 col-lg-auto">
+                            <button type="submit" class="btn btn-success px-4">
+                                <i class="bi bi-check2-circle me-1"></i>Xác nhận đã hoàn hàng về người gửi
+                            </button>
+                        </div>
+                    </form>
+                </div>
+
+                <!-- Informational state when no direct Staff state transition is available for this actor -->
+                <div th:if="${!hasOperationalAction}" class="small text-secondary mt-2 d-flex align-items-center gap-2">
+                    <i class="bi bi-info-circle-fill text-primary fs-5"></i>
+                    <span th:switch="${shipment.status.name()}">
+                        <span th:case="'PENDING_PAYMENT'">Vận đơn đang chờ khách hàng hoàn tất thanh toán cước trực tuyến qua VNPay Sandbox.</span>
+                        <span th:case="'ASSIGNED_PICKUP'">Đã phân công Shipper đi lấy hàng — đang chờ Shipper xác nhận đã lấy hàng trên cổng Shipper.</span>
+                        <span th:case="'OUT_FOR_DELIVERY'">Shipper đang trên đường giao kiện hàng — đang chờ Shipper cập nhật ảnh POD hoặc báo kết quả giao.</span>
+                        <span th:case="'DELIVERED'">Vận đơn đã giao thành công. Không còn thao tác chuyển trạng thái vận hành.</span>
+                        <span th:case="'RETURNED'">Vận đơn đã hoàn trả xong về người gửi.</span>
+                        <span th:case="'CANCELLED'">Vận đơn đã bị hủy.</span>
+                        <span th:case="*">Bước điều phối tiếp theo hiện thuộc phạm vi xử lý của bưu cục đối tác trên tuyến.</span>
+                    </span>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Main 2-Column Layout (07-UI-UX-SPEC.md Section 4.3) -->
+    <div class="row g-4">
+        <!-- Left Column (col-lg-8) -->
+        <div class="col-lg-8 d-flex flex-column gap-4">
+            <!-- Hub Routing & Shippers Info -->
+            <div class="card">
+                <div class="card-header py-2 px-3">
+                    <i class="bi bi-diagram-3 text-primary me-2"></i>Thông tin Tuyến Bưu cục &amp; Nhân sự phụ trách
+                </div>
+                <div class="card-body">
+                    <div class="row g-3">
+                        <div class="col-md-4">
+                            <div class="border rounded-3 p-3 h-100 bg-light bg-opacity-50">
+                                <div class="small text-muted mb-1">Bưu cục gửi (Origin)</div>
+                                <div class="font-mono fw-bold text-primary" th:text="${shipment.originHub != null ? shipment.originHub.code : '—'}">HCM-TD01</div>
+                                <div class="small fw-semibold" th:text="${shipment.originHub != null ? shipment.originHub.name : '—'}">Bưu cục Thủ Đức</div>
+                            </div>
+                        </div>
+                        <div class="col-md-4">
+                            <div class="border rounded-3 p-3 h-100 bg-light bg-opacity-50">
+                                <div class="small text-muted mb-1">Bưu cục nhận (Destination)</div>
+                                <div class="font-mono fw-bold text-primary" th:text="${shipment.destHub != null ? shipment.destHub.code : '—'}">HN-CG01</div>
+                                <div class="small fw-semibold" th:text="${shipment.destHub != null ? shipment.destHub.name : '—'}">Bưu cục Cầu Giấy</div>
+                            </div>
+                        </div>
+                        <div class="col-md-4">
+                            <div class="border rounded-3 p-3 h-100 bg-warning-subtle bg-opacity-25 border-warning-subtle">
+                                <div class="small text-muted mb-1">Vị trí hiện tại</div>
+                                <div class="fw-bold text-primary small">
+                                    <i class="bi bi-geo-alt-fill text-warning me-1"></i>
+                                    <span th:id="'current-hub-' + ${shipment.trackingCode}"
+                                          th:text="${shipment.currentHub != null ? shipment.currentHub.name + ' (' + shipment.currentHub.code + ')' : '—'}">Bưu cục Thủ Đức (HCM-TD01)</span>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="row g-3 mt-1">
+                        <div class="col-md-6">
+                            <div class="small text-muted">Shipper lấy hàng:</div>
+                            <div th:if="${shipment.pickupShipper != null}" class="fw-semibold">
+                                <i class="bi bi-person-badge text-primary me-1"></i>
+                                <span th:text="${shipment.pickupShipper.fullName}">Văn Hùng</span>
+                                <span class="text-muted font-mono small" th:text="'(' + ${shipment.pickupShipper.phone} + ')'"></span>
+                            </div>
+                            <div th:if="${shipment.pickupShipper == null}" class="text-muted fst-italic small">Chưa phân công</div>
+                        </div>
+                        <div class="col-md-6">
+                            <div class="small text-muted">Shipper giao hàng:</div>
+                            <div th:if="${shipment.deliveryShipper != null}" class="fw-semibold">
+                                <i class="bi bi-bicycle text-warning me-1"></i>
+                                <span th:text="${shipment.deliveryShipper.fullName}">Đức Anh</span>
+                                <span class="text-muted font-mono small" th:text="'(' + ${shipment.deliveryShipper.phone} + ')'"></span>
+                            </div>
+                            <div th:if="${shipment.deliveryShipper == null}" class="text-muted fst-italic small">Chưa phân công</div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Sender & Receiver Info -->
+            <div class="card">
+                <div class="card-header py-2 px-3">
+                    <i class="bi bi-people text-primary me-2"></i>Thông tin Người gửi &amp; Người nhận
+                </div>
+                <div class="card-body">
+                    <div class="row g-4">
+                        <div class="col-md-6">
+                            <div class="text-uppercase small fw-bold text-primary mb-2">
+                                <i class="bi bi-send me-1"></i>Người gửi
+                            </div>
+                            <div class="fw-bold" th:text="${shipment.senderName}">Shop Hoàng Nam Tech</div>
+                            <div class="font-mono small text-secondary mt-1">
+                                <i class="bi bi-telephone me-1"></i>
+                                <a th:href="'tel:' + ${shipment.senderPhone}" class="text-decoration-none" th:text="${shipment.senderPhone}">0901234567</a>
+                            </div>
+                            <div class="small text-muted mt-1">
+                                <i class="bi bi-geo-alt me-1"></i>
+                                <span th:text="${shipment.senderAddress + ', ' + shipment.senderDistrict + ', ' + shipment.senderProvince}"></span>
+                            </div>
+                        </div>
+                        <div class="col-md-6 border-md-start">
+                            <div class="text-uppercase small fw-bold text-warning-emphasis mb-2">
+                                <i class="bi bi-person-check me-1"></i>Người nhận
+                            </div>
+                            <div class="fw-bold" th:text="${shipment.receiverName}">Trần Minh Anh</div>
+                            <div class="font-mono small text-secondary mt-1">
+                                <i class="bi bi-telephone me-1"></i>
+                                <a th:href="'tel:' + ${shipment.receiverPhone}" class="text-decoration-none" th:text="${shipment.receiverPhone}">0987654321</a>
+                            </div>
+                            <div class="small text-muted mt-1">
+                                <i class="bi bi-geo-alt me-1"></i>
+                                <span th:text="${shipment.receiverAddress + ', ' + shipment.receiverDistrict + ', ' + shipment.receiverProvince}"></span>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Item, Fee, Payment & COD Details -->
+            <div class="card">
+                <div class="card-header py-2 px-3">
+                    <i class="bi bi-box2-heart text-primary me-2"></i>Chi tiết Hàng hóa, Cước phí &amp; Thu hộ (COD)
+                </div>
+                <div class="card-body">
+                    <div class="row g-4">
+                        <!-- Package -->
+                        <div class="col-md-6">
+                            <div class="mb-2">
+                                <span class="small text-muted">Tên hàng hóa:</span>
+                                <div class="fw-bold" th:text="${shipment.itemName}">Tai nghe Bluetooth</div>
+                            </div>
+                            <div class="row g-2 small mb-2">
+                                <div class="col-6">
+                                    <span class="text-muted">KL thực:</span>
+                                    <strong class="font-mono" th:text="${shipment.actualWeightKg + ' kg'}">1.20 kg</strong>
+                                </div>
+                                <div class="col-6">
+                                    <span class="text-muted">KL tính cước:</span>
+                                    <strong class="font-mono text-primary" th:text="${shipment.chargeableWeightKg + ' kg'}">2.00 kg</strong>
+                                </div>
+                            </div>
+                            <div class="small mb-2" th:if="${shipment.lengthCm != null and shipment.widthCm != null and shipment.heightCm != null}">
+                                <span class="text-muted">Kích thước (D×R×C):</span>
+                                <span class="font-mono fw-semibold"
+                                      th:text="${shipment.lengthCm + ' × ' + shipment.widthCm + ' × ' + shipment.heightCm + ' cm'}"></span>
+                            </div>
+                            <div class="small mb-2">
+                                <span class="text-muted">Quy định đồng kiểm:</span>
+                                <span class="badge bg-info-subtle text-info-emphasis"
+                                      th:text="${shipment.inspectionPolicy != null ? shipment.inspectionPolicy.label : '—'}">Cho xem hàng, không cho thử</span>
+                            </div>
+                            <div class="small" th:if="${shipment.note != null and !#strings.isEmpty(shipment.note)}">
+                                <span class="text-muted">Ghi chú gửi hàng:</span>
+                                <div class="bg-light border rounded p-2 mt-1 fst-italic" th:text="${shipment.note}"></div>
+                            </div>
+                        </div>
+
+                        <!-- Financial -->
+                        <div class="col-md-6">
+                            <div class="bg-light border rounded-3 p-3">
+                                <div class="d-flex justify-content-between small mb-1">
+                                    <span class="text-muted">Cước vận chuyển:</span>
+                                    <span class="money-mono fw-semibold"
+                                          th:text="${shipment.shippingFee != null ? #numbers.formatDecimal(shipment.shippingFee, 0, 'POINT', 0, 'COMMA') + ' đ' : '0 đ'}">59.000 đ</span>
+                                </div>
+                                <div class="d-flex justify-content-between small mb-1">
+                                    <span class="text-muted">Phí thu hộ COD:</span>
+                                    <span class="money-mono fw-semibold"
+                                          th:text="${shipment.codFee != null ? #numbers.formatDecimal(shipment.codFee, 0, 'POINT', 0, 'COMMA') + ' đ' : '0 đ'}">5.000 đ</span>
+                                </div>
+                                <div class="d-flex justify-content-between small mb-2 pb-2 border-bottom">
+                                    <span class="fw-semibold">Tổng cước phí:</span>
+                                    <span class="money-mono fw-bold text-primary"
+                                          th:text="${shipment.totalFee != null ? #numbers.formatDecimal(shipment.totalFee, 0, 'POINT', 0, 'COMMA') + ' đ' : '0 đ'}">64.000 đ</span>
+                                </div>
+                                <div class="d-flex justify-content-between small mb-1">
+                                    <span class="text-muted">Tiền thu hộ COD:</span>
+                                    <span class="money-mono fw-semibold"
+                                          th:text="${shipment.codAmount != null ? #numbers.formatDecimal(shipment.codAmount, 0, 'POINT', 0, 'COMMA') + ' đ' : '0 đ'}">500.000 đ</span>
+                                </div>
+                                <div class="d-flex justify-content-between small mb-1">
+                                    <span class="text-muted">Thanh toán cước:</span>
+                                    <span class="fw-medium">
+                                        <span th:text="${shipment.payerType != null ? shipment.payerType.label : ''}"></span>
+                                        <span th:if="${shipment.paymentMethod != null}" th:text="' (' + ${shipment.paymentMethod.label} + ')'"></span>
+                                    </span>
+                                </div>
+                                <div class="d-flex justify-content-between small mb-2">
+                                    <span class="text-muted">Trạng thái cước / COD:</span>
+                                    <span>
+                                        <span class="badge bg-secondary-subtle text-secondary"
+                                              th:if="${shipment.paymentStatus != null}"
+                                              th:text="${shipment.paymentStatus.label}">Đã thanh toán</span>
+                                        <span class="badge bg-warning-subtle text-warning-emphasis ms-1"
+                                              th:if="${shipment.codStatus != null}"
+                                              th:text="${shipment.codStatus.label}">Chờ thu COD</span>
+                                    </span>
+                                </div>
+                                <div class="mt-2 pt-2 border-top d-flex justify-content-between align-items-center">
+                                    <span class="fw-bold small text-uppercase">Thu người nhận:</span>
+                                    <span class="fs-5 fw-bold money-mono" style="color: #EA580C;"
+                                          th:text="${receiverCollectAmount != null ? #numbers.formatDecimal(receiverCollectAmount, 0, 'POINT', 0, 'COMMA') + ' đ' : '0 đ'}">500.000 đ</span>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- POD Image Card (Displayed when DELIVERED or podImageKey exists) -->
+            <div class="card" th:if="${shipment.status.name() == 'DELIVERED' or (shipment.podImageKey != null and !#strings.isEmpty(shipment.podImageKey))}">
+                <div class="card-header py-2 px-3 d-flex align-items-center justify-content-between">
+                    <span><i class="bi bi-camera-fill text-success me-2"></i>Ảnh Chứng từ Giao hàng (POD)</span>
+                    <small class="text-muted font-mono"
+                           th:if="${shipment.deliveredAt != null}"
+                           th:text="'Giao lúc: ' + ${#temporals.format(shipment.deliveredAt, 'dd/MM/yyyy HH:mm')}"></small>
+                </div>
+                <div class="card-body">
+                    <div th:if="${shipment.podImageKey != null and !#strings.isEmpty(shipment.podImageKey)}"
+                         class="d-flex flex-wrap align-items-center gap-3">
+                        <img th:src="@{/files/pod/{id}(id=${shipment.id})}"
+                             alt="Ảnh chứng từ POD"
+                             class="img-thumbnail pod-thumb"
+                             data-bs-toggle="modal"
+                             data-bs-target="#podLightboxModal">
+                        <div class="small text-muted">
+                            <div class="fw-semibold text-success mb-1"><i class="bi bi-patch-check-fill me-1"></i>Đã lưu chứng từ POD trên Cloudflare R2</div>
+                            <div>Bấm vào ảnh để phóng to kiểm tra chi tiết.</div>
+                        </div>
+                    </div>
+                    <div th:if="${shipment.podImageKey == null or #strings.isEmpty(shipment.podImageKey)}"
+                         class="small text-muted d-flex align-items-center gap-2">
+                        <i class="bi bi-image text-secondary fs-4"></i>
+                        <span>Vận đơn đã giao thành công (dữ liệu mẫu chưa đính kèm tệp ảnh POD).</span>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Live Tracking Timeline -->
+            <div class="card">
+                <div class="card-header py-2 px-3 d-flex align-items-center justify-content-between">
+                    <span><i class="bi bi-clock-history text-primary me-2"></i>Lịch sử Hành trình Vận đơn</span>
+                    <span class="small text-success d-inline-flex align-items-center gap-1">
+                        <span class="live-dot"></span> Tự động cập nhật realtime
+                    </span>
+                </div>
+                <div class="card-body">
+                    <ul class="tracking-timeline mb-0" th:id="'timeline-' + ${shipment.trackingCode}">
+                        <li class="tracking-timeline-item p-2 rounded" th:each="log : ${trackingLogs}">
+                            <div class="d-flex w-100 justify-content-between align-items-center flex-wrap gap-1">
+                                <div class="fw-bold text-primary" th:text="${log.title}">Tiêu đề mốc hành trình</div>
+                                <small class="text-muted font-mono"
+                                       th:text="${log.createdAt != null ? #temporals.format(log.createdAt, 'dd/MM/yyyy HH:mm') : ''}">20/11/2026 09:30</small>
+                            </div>
+                            <div class="small text-secondary mt-1"
+                                 th:if="${log.description != null and !#strings.isEmpty(log.description)}"
+                                 th:text="${log.description}">Mô tả</div>
+                            <div class="d-flex flex-wrap gap-3 small text-muted mt-1">
+                                <span th:if="${log.hub != null}">
+                                    <i class="bi bi-geo-alt-fill text-warning me-1"></i>
+                                    <span th:text="${log.hub.name + ' (' + log.hub.code + ')'}">Bưu cục Thủ Đức</span>
+                                </span>
+                                <span th:if="${log.actor != null}">
+                                    <i class="bi bi-person me-1"></i>
+                                    <span th:text="${log.actor.fullName + ' (' + log.actor.role.label + ')'}">Thu Hà</span>
+                                </span>
+                            </div>
+                        </li>
+                        <li th:if="${#lists.isEmpty(trackingLogs)}" class="tracking-timeline-item p-2 rounded text-muted small">
+                            Chưa có lịch sử hành trình nào được ghi nhận.
+                        </li>
+                    </ul>
+                </div>
+            </div>
+        </div>
+
+        <!-- Right Column (col-lg-4): Chat CSKH Realtime -->
+        <div class="col-lg-4">
+            <div class="card sticky-top" style="top: 84px;">
+                <div class="card-header py-2 px-3 d-flex align-items-center justify-content-between">
+                    <span class="fw-bold text-primary">
+                        <i class="bi bi-chat-dots-fill me-2"></i>Chat CSKH theo Vận đơn
+                    </span>
+                    <span class="badge bg-success-subtle text-success small d-inline-flex align-items-center gap-1">
+                        <span class="live-dot"></span> Realtime
+                    </span>
+                </div>
+                <div class="card-body d-flex flex-column">
+                    <div id="chatMessagesBox" class="chat-messages-box mb-3">
+                        <div class="text-center text-muted py-4 small chat-empty-placeholder">
+                            Đang tải lịch sử trao đổi CSKH...
+                        </div>
+                    </div>
+
+                    <form id="chatSendForm" class="d-flex gap-2">
+                        <input type="text"
+                               id="chatMessageInput"
+                               name="content"
+                               class="form-control form-control-sm"
+                               placeholder="Nhập tin nhắn hỗ trợ khách hàng..."
+                               autocomplete="off"
+                               required>
+                        <button type="submit" class="btn btn-ute-navy btn-sm px-3 flex-shrink-0">
+                            <i class="bi bi-send-fill"></i>
+                        </button>
+                    </form>
+                    <div class="small text-muted mt-2">
+                        <i class="bi bi-shield-lock me-1"></i>Tin nhắn được gửi trực tiếp tới chủ đơn hàng qua WebSocket.
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Modal 1: Confirm Start Return -->
+    <div class="modal fade" id="startReturnModal" tabindex="-1" th:if="${canStartReturn}">
+        <div class="modal-dialog">
+            <form th:action="@{/staff/shipments/{id}/start-return(id=${shipment.id})}"
+                  method="post"
+                  class="modal-content js-disable-on-submit">
+                <div class="modal-header">
+                    <h5 class="modal-title fw-bold text-danger">
+                        <i class="bi bi-arrow-return-left me-2"></i>Xác nhận Kích hoạt Hoàn hàng
+                    </h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+                </div>
+                <div class="modal-body">
+                    <p class="small text-secondary">
+                        Bạn sắp chuyển vận đơn <strong class="font-mono text-dark" th:text="${shipment.trackingCode}"></strong>
+                        sang trạng thái <strong>Đang hoàn hàng (RETURNING)</strong> về bưu cục gửi
+                        <strong class="font-mono" th:text="${shipment.originHub != null ? shipment.originHub.code : ''}"></strong>.
+                    </p>
+                    <div class="mb-2">
+                        <label class="form-label fw-semibold small">Lý do hoàn hàng</label>
+                        <textarea name="reason"
+                                  rows="3"
+                                  class="form-control"
+                                  placeholder="VD: Giao thất bại 3 lần / Người nhận từ chối nhận hàng..."></textarea>
+                    </div>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-light" data-bs-dismiss="modal">Đóng</button>
+                    <button type="submit" class="btn btn-danger">
+                        <i class="bi bi-arrow-return-left me-1"></i>Xác nhận Hoàn hàng
+                    </button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <!-- Modal 2: Confirm Cancel Shipment -->
+    <div class="modal fade" id="cancelShipmentModal" tabindex="-1" th:if="${canCancel}">
+        <div class="modal-dialog">
+            <form th:action="@{/staff/shipments/{id}/cancel(id=${shipment.id})}"
+                  method="post"
+                  class="modal-content js-disable-on-submit">
+                <div class="modal-header">
+                    <h5 class="modal-title fw-bold text-danger">
+                        <i class="bi bi-x-circle me-2"></i>Xác nhận Hủy Vận đơn
+                    </h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+                </div>
+                <div class="modal-body">
+                    <p class="small text-secondary">
+                        Bạn có chắc chắn muốn hủy vận đơn <strong class="font-mono text-dark" th:text="${shipment.trackingCode}"></strong>?
+                        Thao tác này không thể hoàn tác.
+                    </p>
+                    <div class="alert alert-warning small py-2"
+                         th:if="${shipment.paymentStatus != null and shipment.paymentStatus.name() == 'PAID'}">
+                        <i class="bi bi-exclamation-triangle-fill me-1"></i>
+                        Đơn hàng này đã thanh toán trực tuyến. Khi hủy, hệ thống sẽ tự động chuyển trạng thái thanh toán sang
+                        <strong>Chờ hoàn tiền (REFUND_PENDING)</strong>.
+                    </div>
+                    <div class="mb-2">
+                        <label class="form-label fw-semibold small">Lý do hủy đơn</label>
+                        <textarea name="reason"
+                                  rows="3"
+                                  class="form-control"
+                                  placeholder="Nhập lý do hủy vận đơn (tùy chọn)..."></textarea>
+                    </div>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-light" data-bs-dismiss="modal">Quay lại</button>
+                    <button type="submit" class="btn btn-danger">
+                        <i class="bi bi-trash3 me-1"></i>Xác nhận Hủy đơn
+                    </button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <!-- Modal 3: POD Lightbox -->
+    <div class="modal fade" id="podLightboxModal" tabindex="-1"
+         th:if="${shipment.podImageKey != null and !#strings.isEmpty(shipment.podImageKey)}">
+        <div class="modal-dialog modal-lg modal-dialog-centered">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h5 class="modal-title fw-bold text-primary">
+                        Ảnh Chứng từ Giao hàng (POD) — <span class="font-mono" th:text="${shipment.trackingCode}"></span>
+                    </h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+                </div>
+                <div class="modal-body text-center bg-dark bg-opacity-10">
+                    <img th:src="@{/files/pod/{id}(id=${shipment.id})}"
+                         alt="Ảnh POD phóng to"
+                         class="img-fluid rounded shadow-sm"
+                         style="max-height: 75vh;">
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<th:block layout:fragment="scripts">
+    <script th:src="@{/js/tracking-ws.js}"></script>
+    <script th:src="@{/js/chat-ws.js}"></script>
+    <script th:inline="javascript">
+        function copyTrackingCode(btn) {
+            const code = btn.getAttribute('data-copy-code');
+            if (!code || !navigator.clipboard) return;
+            navigator.clipboard.writeText(code).then(function () {
+                const icon = btn.querySelector('i');
+                if (icon) {
+                    icon.className = 'bi bi-check-lg text-success';
+                    setTimeout(function () {
+                        icon.className = 'bi bi-clipboard';
+                    }, 1500);
+                }
+            }).catch(function () {});
+        }
+
+        document.addEventListener('DOMContentLoaded', function () {
+            const trackingCode = /*[[${shipment.trackingCode}]]*/ '';
+            const shipmentId = /*[[${shipment.id}]]*/ null;
+            const currentUserId = /*[[${currentUserId}]]*/ null;
+
+            if (trackingCode && window.UteTrackingWs) {
+                window.UteTrackingWs.subscribe(trackingCode);
+            }
+            if (shipmentId && window.UteChatWs) {
+                window.UteChatWs.init(shipmentId, currentUserId);
+            }
+
+            document.querySelectorAll('form.js-disable-on-submit').forEach(function (form) {
+                form.addEventListener('submit', function () {
+                    const submitBtn = form.querySelector('button[type="submit"]');
+                    if (submitBtn && !submitBtn.disabled) {
+                        submitBtn.disabled = true;
+                        submitBtn.insertAdjacentHTML('afterbegin',
+                            '<span class="spinner-border spinner-border-sm me-1" role="status" aria-hidden="true"></span>');
+                    }
+                });
+            });
+        });
+    </script>
+</th:block>
+</body>
+</html>

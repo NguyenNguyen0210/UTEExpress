@@ -1,0 +1,689 @@
+<!DOCTYPE html>
+<html lang="vi"
+      xmlns:th="http://www.thymeleaf.org"
+      xmlns:layout="http://www.ultraq.net.nz/thymeleaf/layout"
+      layout:decorate="~{layout/base-portal}">
+<head>
+    <title>Tác vụ Lấy &amp; Giao hàng</title>
+    <style>
+        .shipper-tabs .nav-link {
+            color: #475569;
+            font-weight: 600;
+            border-radius: 8px;
+            padding: 0.6rem 1.1rem;
+            display: inline-flex;
+            align-items: center;
+            gap: 0.5rem;
+        }
+        .shipper-tabs .nav-link:hover {
+            background-color: #EEF2FF;
+            color: var(--ute-navy);
+        }
+        .shipper-tabs .nav-link.active {
+            background-color: var(--ute-navy);
+            color: #ffffff;
+        }
+        .shipper-tabs .nav-link.active .badge {
+            background-color: rgba(255, 255, 255, 0.22) !important;
+            color: #ffffff !important;
+        }
+        .collect-highlight-box {
+            background-color: #FFF7ED;
+            border: 1px solid #FDBA74;
+            border-radius: 8px;
+        }
+        .collect-paid-box {
+            background-color: #F0FDF4;
+            border: 1px solid #BBF7D0;
+            border-radius: 8px;
+        }
+        .pod-preview-img {
+            max-height: 260px;
+            width: 100%;
+            object-fit: contain;
+            border-radius: 8px;
+            background-color: #F8FAFC;
+        }
+    </style>
+</head>
+<body>
+<h5 layout:fragment="page-title"><i class="bi bi-list-check me-2"></i>Tác vụ Lấy &amp; Giao hàng</h5>
+
+<div layout:fragment="content">
+    <!-- Top Shipper Info Bar -->
+    <div class="card mb-3">
+        <div class="card-body py-3 d-flex flex-wrap align-items-center justify-content-between gap-3">
+            <div>
+                <div class="small text-muted">Nhân viên Giao nhận (Shipper)</div>
+                <div class="fw-bold text-primary">
+                    <span th:text="${shipper.fullName}">Văn Hùng</span>
+                    <span class="badge bg-warning-subtle text-warning-emphasis font-mono ms-2"
+                          th:if="${shipper.hub != null}"
+                          th:text="${shipper.hub.code + ' — ' + shipper.hub.name}">HCM-TD01</span>
+                </div>
+            </div>
+            <a th:href="@{/shipper/cod}" class="btn btn-ute-orange btn-sm px-3">
+                <i class="bi bi-cash-stack me-1"></i>Xem tiền COD đang giữ
+            </a>
+        </div>
+    </div>
+
+    <!-- 3 Operational Tabs with Badge Counts -->
+    <div class="card mb-4">
+        <div class="card-body py-2 px-3">
+            <ul class="nav nav-pills shipper-tabs flex-wrap gap-2 py-1">
+                <li class="nav-item">
+                    <a class="nav-link"
+                       th:classappend="${activeTab == 'pickup'} ? 'active'"
+                       th:href="@{/shipper/tasks(tab='pickup')}">
+                        <i class="bi bi-box-arrow-in-up"></i>
+                        <span>Cần lấy hàng</span>
+                        <span class="badge rounded-pill bg-info-subtle text-info-emphasis" th:text="${pickupCount}">0</span>
+                    </a>
+                </li>
+                <li class="nav-item">
+                    <a class="nav-link"
+                       th:classappend="${activeTab == 'delivery'} ? 'active'"
+                       th:href="@{/shipper/tasks(tab='delivery')}">
+                        <i class="bi bi-bicycle"></i>
+                        <span>Cần giao hàng</span>
+                        <span class="badge rounded-pill badge-out-for-delivery" th:text="${deliveryCount}">0</span>
+                    </a>
+                </li>
+                <li class="nav-item">
+                    <a class="nav-link"
+                       th:classappend="${activeTab == 'done'} ? 'active'"
+                       th:href="@{/shipper/tasks(tab='done')}">
+                        <i class="bi bi-check2-all"></i>
+                        <span>Đã xử lý</span>
+                        <span class="badge rounded-pill bg-success-subtle text-success" th:text="${doneCount}">0</span>
+                    </a>
+                </li>
+            </ul>
+        </div>
+    </div>
+
+    <!-- ==================== TAB 1: PICKUP TASKS ==================== -->
+    <div th:if="${activeTab == 'pickup'}">
+        <div th:if="${#lists.isEmpty(pickupTasks)}" class="card text-center py-5 px-3">
+            <div class="card-body">
+                <i class="bi bi-box2 text-muted display-4 d-block mb-3"></i>
+                <h5 class="fw-bold text-dark">Hiện chưa có đơn hàng nào cần lấy</h5>
+                <p class="small text-muted mb-3">
+                    Khi nhân viên bưu cục phân công đơn mới cho bạn, thông báo sẽ hiển thị ngay lập tức.
+                </p>
+                <a th:if="${deliveryCount > 0}" th:href="@{/shipper/tasks(tab='delivery')}" class="btn btn-ute-orange btn-sm">
+                    Chuyển sang tab Cần giao hàng (<span th:text="${deliveryCount}">0</span>)
+                </a>
+            </div>
+        </div>
+
+        <div class="row row-cols-1 row-cols-md-2 g-3" th:if="${!#lists.isEmpty(pickupTasks)}">
+            <div class="col" th:each="s : ${pickupTasks}" th:with="collectAmt=${receiverCollectMap.get(s.id)}">
+                <div class="card h-100 shadow-sm">
+                    <div class="card-header py-2 px-3 d-flex flex-wrap align-items-center justify-content-between gap-2">
+                        <div class="d-flex flex-wrap align-items-center gap-2">
+                            <span class="tracking-code fw-bold text-primary" th:text="${s.trackingCode}">UTE261120A8K4P2</span>
+                            <span class="badge bg-primary-subtle text-primary small"
+                                  th:if="${s.serviceType != null}"
+                                  th:text="${s.serviceType.name}">Nhanh</span>
+                            <span class="badge bg-danger text-white small" th:if="${s.isFragile}">
+                                <i class="bi bi-exclamation-diamond-fill me-1"></i>HÀNG DỄ VỠ
+                            </span>
+                        </div>
+                        <span class="badge bg-info-subtle text-info-emphasis rounded-pill">Chờ lấy</span>
+                    </div>
+
+                    <div class="card-body d-flex flex-column gap-2">
+                        <div>
+                            <div class="small text-muted">Người gửi (Điểm lấy hàng)</div>
+                            <div class="fw-bold text-dark">
+                                <span th:text="${s.senderName}">Shop Hoàng Nam Tech</span>
+                                <a th:href="'tel:' + ${s.senderPhone}" class="ms-2 font-mono small text-decoration-none">
+                                    <i class="bi bi-telephone-fill me-1"></i><span th:text="${s.senderPhone}">0901234567</span>
+                                </a>
+                            </div>
+                            <div class="small text-secondary mt-1">
+                                <i class="bi bi-geo-alt-fill text-primary me-1"></i>
+                                <span th:text="${s.senderAddress + ', ' + s.senderDistrict + ', ' + s.senderProvince}"></span>
+                            </div>
+                        </div>
+
+                        <div class="small bg-light border rounded p-2">
+                            <div>
+                                <span class="text-muted">Hàng hóa:</span>
+                                <strong th:text="${s.itemName}">Tai nghe Bluetooth</strong>
+                                <span class="text-muted font-mono" th:text="'(' + ${s.chargeableWeightKg} + ' kg)'"></span>
+                            </div>
+                            <div class="mt-1">
+                                <span class="text-muted">Tuyến:</span>
+                                <span class="routing-code fw-semibold text-primary">
+                                    <span th:text="${s.originHub != null ? s.originHub.code : '—'}"></span>
+                                    <i class="bi bi-arrow-right text-warning mx-1"></i>
+                                    <span th:text="${s.destHub != null ? s.destHub.code : '—'}"></span>
+                                </span>
+                            </div>
+                        </div>
+
+                        <!-- Collect Amount & Inspection Policy -->
+                        <div class="p-2 px-3 d-flex flex-wrap align-items-center justify-content-between gap-2"
+                             th:classappend="${collectAmt != null and collectAmt.signum() > 0} ? 'collect-highlight-box' : 'collect-paid-box'">
+                            <div>
+                                <div class="small text-muted">Số tiền thu người nhận (khi giao)</div>
+                                <div class="fs-5 fw-bold money-mono"
+                                     th:style="${collectAmt != null and collectAmt.signum() > 0} ? 'color: #EA580C;' : 'color: #15803D;'"
+                                     th:text="${collectAmt != null and collectAmt.signum() > 0} ? (${#numbers.formatDecimal(collectAmt, 0, 'POINT', 0, 'COMMA') + ' đ'}) : '0 đ — Không thu tiền'">500.000 đ</div>
+                            </div>
+                            <div class="text-end">
+                                <div class="small text-muted">Chỉ dẫn đồng kiểm</div>
+                                <span class="badge bg-info-subtle text-info-emphasis"
+                                      th:text="${s.inspectionPolicy != null ? s.inspectionPolicy.label : '—'}">Cho xem không cho thử</span>
+                            </div>
+                        </div>
+
+                        <div class="small text-secondary fst-italic" th:if="${s.note != null and !#strings.isEmpty(s.note)}">
+                            <i class="bi bi-sticky me-1 text-warning"></i><span th:text="${s.note}"></span>
+                        </div>
+                    </div>
+
+                    <div class="card-footer bg-white border-top pt-2 pb-3">
+                        <form th:action="@{/shipper/shipments/{id}/pickup(id=${s.id})}"
+                              method="post"
+                              class="d-flex flex-column gap-2 js-disable-on-submit">
+                            <input type="text"
+                                   name="note"
+                                   class="form-control form-control-sm"
+                                   placeholder="Ghi chú khi nhận hàng từ shop (tùy chọn)...">
+                            <button type="submit" class="btn btn-ute-navy w-100">
+                                <i class="bi bi-box-seam-fill me-1"></i>Xác nhận đã lấy hàng
+                            </button>
+                        </form>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- ==================== TAB 2: DELIVERY TASKS ==================== -->
+    <div th:if="${activeTab == 'delivery'}">
+        <div th:if="${#lists.isEmpty(deliveryTasks)}" class="card text-center py-5 px-3">
+            <div class="card-body">
+                <i class="bi bi-bicycle text-muted display-4 d-block mb-3"></i>
+                <h5 class="fw-bold text-dark">Hiện chưa có đơn hàng nào cần giao</h5>
+                <p class="small text-muted mb-3">
+                    Tất cả các đơn giao hàng được phân công cho bạn đã được xử lý xong.
+                </p>
+                <a th:if="${pickupCount > 0}" th:href="@{/shipper/tasks(tab='pickup')}" class="btn btn-ute-navy btn-sm">
+                    Xem đơn Cần lấy hàng (<span th:text="${pickupCount}">0</span>)
+                </a>
+            </div>
+        </div>
+
+        <div class="row row-cols-1 row-cols-md-2 g-3" th:if="${!#lists.isEmpty(deliveryTasks)}">
+            <div class="col" th:each="s : ${deliveryTasks}" th:with="collectAmt=${receiverCollectMap.get(s.id)}">
+                <div class="card h-100 shadow-sm border-warning-subtle">
+                    <div class="card-header py-2 px-3 d-flex flex-wrap align-items-center justify-content-between gap-2">
+                        <div class="d-flex flex-wrap align-items-center gap-2">
+                            <span class="tracking-code fw-bold text-primary" th:text="${s.trackingCode}">UTE261119C3N5X1</span>
+                            <span class="badge bg-primary-subtle text-primary small"
+                                  th:if="${s.serviceType != null}"
+                                  th:text="${s.serviceType.name}">Hỏa tốc</span>
+                            <span class="badge bg-danger text-white small" th:if="${s.isFragile}">
+                                <i class="bi bi-exclamation-diamond-fill me-1"></i>HÀNG DỄ VỠ
+                            </span>
+                        </div>
+                        <div class="d-flex align-items-center gap-1">
+                            <span class="badge bg-danger-subtle text-danger small"
+                                  th:if="${s.failedDeliveryCount != null and s.failedDeliveryCount > 0}"
+                                  th:text="'Thất bại ' + ${s.failedDeliveryCount} + '/3'"></span>
+                            <span class="badge badge-out-for-delivery rounded-pill">Đang giao</span>
+                        </div>
+                    </div>
+
+                    <div class="card-body d-flex flex-column gap-2">
+                        <!-- Receiver Contact & Address -->
+                        <div>
+                            <div class="small text-muted">Người nhận hàng</div>
+                            <div class="fw-bold text-dark fs-6">
+                                <span th:text="${s.receiverName}">Phạm Thu Trang</span>
+                                <a th:href="'tel:' + ${s.receiverPhone}" class="ms-2 font-mono small text-decoration-none">
+                                    <i class="bi bi-telephone-fill text-success me-1"></i><span th:text="${s.receiverPhone}">0938112233</span>
+                                </a>
+                            </div>
+                            <div class="small text-secondary mt-1">
+                                <i class="bi bi-geo-alt-fill text-danger me-1"></i>
+                                <span th:text="${s.receiverAddress + ', ' + s.receiverDistrict + ', ' + s.receiverProvince}"></span>
+                            </div>
+                        </div>
+
+                        <!-- Package Details -->
+                        <div class="small bg-light border rounded p-2">
+                            <div>
+                                <span class="text-muted">Hàng hóa:</span>
+                                <strong th:text="${s.itemName}">Chuột không dây</strong>
+                                <span class="text-muted font-mono" th:text="'(' + ${s.chargeableWeightKg} + ' kg)'"></span>
+                            </div>
+                            <div class="mt-1">
+                                <span class="text-muted"><i class="bi bi-eye-fill text-primary me-1"></i>Chỉ dẫn đồng kiểm:</span>
+                                <strong class="text-primary"
+                                        th:text="${s.inspectionPolicy != null ? s.inspectionPolicy.label : '—'}">Cho thử hàng</strong>
+                            </div>
+                        </div>
+
+                        <!-- Prominent Collect Amount Box -->
+                        <div class="p-3"
+                             th:classappend="${collectAmt != null and collectAmt.signum() > 0} ? 'collect-highlight-box' : 'collect-paid-box'">
+                            <div class="d-flex align-items-center justify-content-between gap-2">
+                                <span class="small fw-semibold text-uppercase text-secondary">Số tiền cần thu người nhận</span>
+                                <span class="badge bg-white text-secondary border small"
+                                      th:if="${s.payerType != null}"
+                                      th:text="${s.payerType.label}">Người gửi trả</span>
+                            </div>
+                            <div class="fs-4 fw-bold money-mono mt-1"
+                                 th:style="${collectAmt != null and collectAmt.signum() > 0} ? 'color: #EA580C;' : 'color: #15803D;'"
+                                 th:text="${collectAmt != null and collectAmt.signum() > 0} ? (${#numbers.formatDecimal(collectAmt, 0, 'POINT', 0, 'COMMA') + ' đ'}) : '0 đ — ĐÃ THANH TOÁN'">300.000 đ</div>
+                            <div class="small text-muted mt-1" th:if="${collectAmt != null and collectAmt.signum() > 0}">
+                                COD:
+                                <span class="font-mono" th:text="${s.codAmount != null ? #numbers.formatDecimal(s.codAmount, 0, 'POINT', 0, 'COMMA') + ' đ' : '0 đ'}"></span>
+                                <span th:if="${s.payerType != null and s.payerType.name() == 'RECEIVER' and s.paymentStatus != null and s.paymentStatus.name() != 'PAID'}">
+                                    + Cước: <span class="font-mono" th:text="${#numbers.formatDecimal(s.totalFee, 0, 'POINT', 0, 'COMMA') + ' đ'}"></span>
+                                </span>
+                            </div>
+                        </div>
+
+                        <div class="small text-secondary fst-italic" th:if="${s.note != null and !#strings.isEmpty(s.note)}">
+                            <i class="bi bi-sticky me-1 text-warning"></i><span th:text="${s.note}"></span>
+                        </div>
+                    </div>
+
+                    <div class="card-footer bg-white border-top py-3">
+                        <div class="d-flex flex-wrap gap-2">
+                            <button type="button"
+                                    class="btn btn-success flex-grow-1 fw-semibold"
+                                    data-bs-toggle="modal"
+                                    data-bs-target="#deliverPodModal"
+                                    th:attr="data-shipment-id=${s.id},
+                                             data-tracking-code=${s.trackingCode},
+                                             data-receiver-name=${s.receiverName},
+                                             data-collect-display=${collectAmt != null and collectAmt.signum() > 0 ? #numbers.formatDecimal(collectAmt, 0, 'POINT', 0, 'COMMA') + ' đ' : '0 đ — ĐÃ THANH TOÁN'}"
+                                    onclick="openDeliverPodModal(this)">
+                                <i class="bi bi-camera-fill me-1"></i>Giao thành công (POD)
+                            </button>
+                            <button type="button"
+                                    class="btn btn-outline-danger fw-semibold"
+                                    data-bs-toggle="modal"
+                                    data-bs-target="#failDeliveryModal"
+                                    th:attr="data-shipment-id=${s.id},
+                                             data-tracking-code=${s.trackingCode},
+                                             data-receiver-name=${s.receiverName},
+                                             data-failed-count=${s.failedDeliveryCount ?: 0}"
+                                    onclick="openFailDeliveryModal(this)">
+                                <i class="bi bi-x-octagon me-1"></i>Giao thất bại
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- ==================== TAB 3: COMPLETED / DONE TASKS ==================== -->
+    <div th:if="${activeTab == 'done'}">
+        <div th:if="${#lists.isEmpty(doneTasks)}" class="card text-center py-5 px-3">
+            <div class="card-body">
+                <i class="bi bi-clock-history text-muted display-4 d-block mb-3"></i>
+                <h5 class="fw-bold text-dark">Chưa có vận đơn nào trong lịch sử đã xử lý</h5>
+                <p class="small text-muted mb-0">
+                    Các đơn bạn đã xác nhận lấy hàng, giao thành công hoặc báo giao thất bại sẽ được lưu tại đây.
+                </p>
+            </div>
+        </div>
+
+        <div class="row row-cols-1 row-cols-md-2 g-3" th:if="${!#lists.isEmpty(doneTasks)}">
+            <div class="col" th:each="s : ${doneTasks}" th:with="collectAmt=${receiverCollectMap.get(s.id)}">
+                <div class="card h-100">
+                    <div class="card-header py-2 px-3 d-flex flex-wrap align-items-center justify-content-between gap-2">
+                        <div class="d-flex flex-wrap align-items-center gap-2">
+                            <span class="tracking-code fw-bold text-primary" th:text="${s.trackingCode}">UTE261118D9P4W7</span>
+                            <span class="badge bg-light text-secondary border small"
+                                  th:if="${s.serviceType != null}"
+                                  th:text="${s.serviceType.name}">Nhanh</span>
+                            <span class="badge bg-warning-subtle text-warning-emphasis border border-warning small"
+                                  th:if="${s.isFragile}">Dễ vỡ</span>
+                        </div>
+                        <span th:class="'badge rounded-pill ' + ${s.status.badgeClass}"
+                              th:text="${s.status.label}">Giao thành công</span>
+                    </div>
+
+                    <div class="card-body d-flex flex-column gap-2 small">
+                        <div class="d-flex justify-content-between align-items-start gap-2">
+                            <div>
+                                <div class="text-muted">Người nhận</div>
+                                <div class="fw-semibold text-dark" th:text="${s.receiverName + ' · ' + s.receiverPhone}"></div>
+                                <div class="text-muted" th:text="${s.receiverAddress + ', ' + s.receiverDistrict + ', ' + s.receiverProvince}"></div>
+                            </div>
+                            <span class="routing-code badge bg-light text-primary border flex-shrink-0">
+                                <span th:text="${s.originHub != null ? s.originHub.code : '—'}"></span>
+                                →
+                                <span th:text="${s.destHub != null ? s.destHub.code : '—'}"></span>
+                            </span>
+                        </div>
+
+                        <div class="d-flex flex-wrap justify-content-between align-items-center pt-2 border-top gap-2">
+                            <div>
+                                <span class="text-muted">Thu người nhận:</span>
+                                <strong class="money-mono ms-1" style="color: #EA580C;"
+                                        th:text="${collectAmt != null ? #numbers.formatDecimal(collectAmt, 0, 'POINT', 0, 'COMMA') + ' đ' : '0 đ'}">600.000 đ</strong>
+                            </div>
+                            <div class="d-flex align-items-center gap-2">
+                                <span class="badge bg-warning-subtle text-warning-emphasis"
+                                      th:if="${s.codStatus != null and s.codStatus.name() != 'NONE'}"
+                                      th:text="'COD: ' + ${s.codStatus.label}">COD: Shipper đang giữ</span>
+                                <span class="text-muted font-mono"
+                                      th:text="${s.deliveredAt != null ? #temporals.format(s.deliveredAt, 'dd/MM/yyyy HH:mm') : (s.updatedAt != null ? #temporals.format(s.updatedAt, 'dd/MM/yyyy HH:mm') : '')}"></span>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- ==================== MODAL 1: DELIVER SUCCESS (POD UPLOAD - PHASE 3 READY) ==================== -->
+    <div class="modal fade" id="deliverPodModal" tabindex="-1" aria-hidden="true">
+        <div class="modal-dialog modal-dialog-centered">
+            <form id="deliverPodForm"
+                  method="post"
+                  enctype="multipart/form-data"
+                  class="modal-content">
+                <div class="modal-header bg-success-subtle">
+                    <h5 class="modal-title fw-bold text-success">
+                        <i class="bi bi-camera-fill me-2"></i>Xác nhận Giao thành công (Ảnh POD)
+                    </h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+                </div>
+                <div class="modal-body">
+                    <div class="bg-light border rounded p-3 mb-3 small">
+                        <div class="d-flex justify-content-between mb-1">
+                            <span class="text-muted">Mã vận đơn:</span>
+                            <strong id="podModalTrackingCode" class="font-mono text-primary">UTE...</strong>
+                        </div>
+                        <div class="d-flex justify-content-between mb-1">
+                            <span class="text-muted">Người nhận:</span>
+                            <strong id="podModalReceiverName">—</strong>
+                        </div>
+                        <div class="d-flex justify-content-between">
+                            <span class="text-muted">Số tiền cần thu:</span>
+                            <strong id="podModalCollectAmount" class="money-mono" style="color: #EA580C;">0 đ</strong>
+                        </div>
+                    </div>
+
+                    <div class="mb-3">
+                        <label for="podImageInput" class="form-label fw-semibold">
+                            Ảnh chứng từ giao hàng (POD) <span class="text-danger">*</span>
+                        </label>
+                        <input type="file"
+                               id="podImageInput"
+                               name="podImage"
+                               class="form-control"
+                               accept="image/jpeg,image/png,image/webp"
+                               capture="environment"
+                               required>
+                        <div class="form-text">
+                            Bắt buộc tải ảnh chụp kiện hàng/người nhận (Định dạng JPG, PNG, WEBP — tối đa 5MB).
+                        </div>
+                        <div id="podFileError" class="text-danger small mt-1 d-none"></div>
+                    </div>
+
+                    <!-- Instant JS Preview Container -->
+                    <div id="podPreviewContainer" class="mb-3 d-none">
+                        <div class="d-flex justify-content-between align-items-center mb-1">
+                            <span class="small fw-semibold text-success">
+                                <i class="bi bi-check-circle-fill me-1"></i>Xem trước ảnh POD
+                            </span>
+                            <button type="button" id="podClearPreviewBtn" class="btn btn-link btn-sm text-danger p-0 text-decoration-none">
+                                Chọn ảnh khác
+                            </button>
+                        </div>
+                        <img id="podPreviewImg" src="" alt="Xem trước ảnh POD" class="pod-preview-img border">
+                    </div>
+
+                    <div class="mb-2">
+                        <label for="podNoteInput" class="form-label fw-semibold small">Ghi chú giao hàng (tùy chọn)</label>
+                        <textarea id="podNoteInput"
+                                  name="note"
+                                  rows="2"
+                                  class="form-control"
+                                  placeholder="VD: Người nhận đã kiểm tra hàng và thanh toán đầy đủ..."></textarea>
+                    </div>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-light" data-bs-dismiss="modal">Hủy</button>
+                    <button type="submit" id="podSubmitBtn" class="btn btn-success fw-semibold">
+                        <i class="bi bi-check-circle-fill me-1"></i>Xác nhận giao thành công
+                    </button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <!-- ==================== MODAL 2: DELIVERY FAILED ==================== -->
+    <div class="modal fade" id="failDeliveryModal" tabindex="-1" aria-hidden="true">
+        <div class="modal-dialog modal-dialog-centered">
+            <form id="failDeliveryForm"
+                  method="post"
+                  class="modal-content js-disable-on-submit">
+                <div class="modal-header bg-danger-subtle">
+                    <h5 class="modal-title fw-bold text-danger">
+                        <i class="bi bi-x-octagon-fill me-2"></i>Báo cáo Giao hàng Thất bại
+                    </h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+                </div>
+                <div class="modal-body">
+                    <div class="bg-light border rounded p-3 mb-3 small">
+                        <div class="d-flex justify-content-between mb-1">
+                            <span class="text-muted">Mã vận đơn:</span>
+                            <strong id="failModalTrackingCode" class="font-mono text-primary">UTE...</strong>
+                        </div>
+                        <div class="d-flex justify-content-between mb-1">
+                            <span class="text-muted">Người nhận:</span>
+                            <strong id="failModalReceiverName">—</strong>
+                        </div>
+                        <div class="d-flex justify-content-between">
+                            <span class="text-muted">Số lần phát thất bại:</span>
+                            <strong id="failModalAttemptLabel" class="text-danger">Lần 1 / 3</strong>
+                        </div>
+                    </div>
+
+                    <div id="failModalFinalAttemptWarn" class="alert alert-warning small py-2 d-none">
+                        <i class="bi bi-exclamation-triangle-fill me-1"></i>
+                        Đây là lần giao thất bại thứ <strong>3/3</strong>. Sau khi xác nhận, bưu cục sẽ chuyển đơn sang quy trình hoàn hàng.
+                    </div>
+
+                    <div class="mb-3">
+                        <label class="form-label fw-semibold">Chọn lý do giao thất bại <span class="text-danger">*</span></label>
+                        <div class="d-flex flex-column gap-2">
+                            <label class="border rounded p-2 d-flex align-items-center gap-2 cursor-pointer">
+                                <input class="form-check-input m-0" type="radio" name="reason"
+                                       value="Khách không nghe máy / Thuê bao không liên lạc được" required checked>
+                                <span class="small">Khách không nghe máy / Thuê bao không liên lạc được</span>
+                            </label>
+                            <label class="border rounded p-2 d-flex align-items-center gap-2 cursor-pointer">
+                                <input class="form-check-input m-0" type="radio" name="reason"
+                                       value="Sai địa chỉ / Không tìm thấy địa chỉ người nhận" required>
+                                <span class="small">Sai địa chỉ / Không tìm thấy địa chỉ người nhận</span>
+                            </label>
+                            <label class="border rounded p-2 d-flex align-items-center gap-2 cursor-pointer">
+                                <input class="form-check-input m-0" type="radio" name="reason"
+                                       value="Khách hẹn giao lại vào thời gian khác" required>
+                                <span class="small">Khách hẹn giao lại vào thời gian khác</span>
+                            </label>
+                            <label class="border rounded p-2 d-flex align-items-center gap-2 cursor-pointer">
+                                <input class="form-check-input m-0" type="radio" name="reason"
+                                       value="Khách từ chối nhận hàng" required>
+                                <span class="small">Khách từ chối nhận hàng</span>
+                            </label>
+                        </div>
+                    </div>
+
+                    <div class="mb-2">
+                        <label for="failExtraNoteInput" class="form-label fw-semibold small">Ghi chú chi tiết thêm (tùy chọn)</label>
+                        <textarea id="failExtraNoteInput"
+                                  name="extraNote"
+                                  rows="2"
+                                  class="form-control"
+                                  placeholder="VD: Đã gọi 3 cuộc lúc 10h15 nhưng không nhấc máy..."></textarea>
+                    </div>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-light" data-bs-dismiss="modal">Đóng</button>
+                    <button type="submit" class="btn btn-danger fw-semibold">
+                        <i class="bi bi-exclamation-circle me-1"></i>Xác nhận giao thất bại
+                    </button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+
+<th:block layout:fragment="scripts">
+    <script>
+        const MAX_POD_BYTES = 5 * 1024 * 1024;
+        const ALLOWED_POD_TYPES = ['image/jpeg', 'image/png', 'image/webp'];
+
+        function resetPodPreview() {
+            const input = document.getElementById('podImageInput');
+            const previewContainer = document.getElementById('podPreviewContainer');
+            const previewImg = document.getElementById('podPreviewImg');
+            const errorBox = document.getElementById('podFileError');
+            if (input) input.value = '';
+            if (previewImg) previewImg.src = '';
+            if (previewContainer) previewContainer.classList.add('d-none');
+            if (errorBox) {
+                errorBox.textContent = '';
+                errorBox.classList.add('d-none');
+            }
+        }
+
+        function openDeliverPodModal(btn) {
+            const shipmentId = btn.getAttribute('data-shipment-id');
+            const trackingCode = btn.getAttribute('data-tracking-code') || '';
+            const receiverName = btn.getAttribute('data-receiver-name') || '';
+            const collectDisplay = btn.getAttribute('data-collect-display') || '0 đ';
+
+            const form = document.getElementById('deliverPodForm');
+            if (form && shipmentId) {
+                form.action = '/shipper/shipments/' + shipmentId + '/deliver';
+            }
+            document.getElementById('podModalTrackingCode').textContent = trackingCode;
+            document.getElementById('podModalReceiverName').textContent = receiverName;
+            document.getElementById('podModalCollectAmount').textContent = collectDisplay;
+            document.getElementById('podNoteInput').value = '';
+            resetPodPreview();
+        }
+
+        function openFailDeliveryModal(btn) {
+            const shipmentId = btn.getAttribute('data-shipment-id');
+            const trackingCode = btn.getAttribute('data-tracking-code') || '';
+            const receiverName = btn.getAttribute('data-receiver-name') || '';
+            const failedCount = parseInt(btn.getAttribute('data-failed-count') || '0', 10);
+            const nextAttempt = failedCount + 1;
+
+            const form = document.getElementById('failDeliveryForm');
+            if (form && shipmentId) {
+                form.action = '/shipper/shipments/' + shipmentId + '/fail';
+            }
+            document.getElementById('failModalTrackingCode').textContent = trackingCode;
+            document.getElementById('failModalReceiverName').textContent = receiverName;
+            document.getElementById('failModalAttemptLabel').textContent = 'Lần ' + nextAttempt + ' / 3';
+            document.getElementById('failExtraNoteInput').value = '';
+
+            const warnEl = document.getElementById('failModalFinalAttemptWarn');
+            if (warnEl) {
+                if (nextAttempt >= 3) {
+                    warnEl.classList.remove('d-none');
+                } else {
+                    warnEl.classList.add('d-none');
+                }
+            }
+        }
+
+        document.addEventListener('DOMContentLoaded', function () {
+            const podInput = document.getElementById('podImageInput');
+            const previewContainer = document.getElementById('podPreviewContainer');
+            const previewImg = document.getElementById('podPreviewImg');
+            const errorBox = document.getElementById('podFileError');
+            const clearBtn = document.getElementById('podClearPreviewBtn');
+            const podForm = document.getElementById('deliverPodForm');
+
+            if (podInput) {
+                podInput.addEventListener('change', function () {
+                    errorBox.textContent = '';
+                    errorBox.classList.add('d-none');
+
+                    const file = podInput.files && podInput.files[0];
+                    if (!file) {
+                        previewContainer.classList.add('d-none');
+                        previewImg.src = '';
+                        return;
+                    }
+                    if (!ALLOWED_POD_TYPES.includes(file.type)) {
+                        errorBox.textContent = 'Chỉ chấp nhận tệp ảnh định dạng JPG, PNG hoặc WEBP.';
+                        errorBox.classList.remove('d-none');
+                        podInput.value = '';
+                        previewContainer.classList.add('d-none');
+                        return;
+                    }
+                    if (file.size > MAX_POD_BYTES) {
+                        errorBox.textContent = 'Dung lượng ảnh POD vượt quá giới hạn tối đa 5MB.';
+                        errorBox.classList.remove('d-none');
+                        podInput.value = '';
+                        previewContainer.classList.add('d-none');
+                        return;
+                    }
+
+                    const reader = new FileReader();
+                    reader.onload = function (e) {
+                        previewImg.src = e.target.result;
+                        previewContainer.classList.remove('d-none');
+                    };
+                    reader.readAsDataURL(file);
+                });
+            }
+
+            if (clearBtn) {
+                clearBtn.addEventListener('click', resetPodPreview);
+            }
+
+            if (podForm) {
+                podForm.addEventListener('submit', function (e) {
+                    const file = podInput && podInput.files && podInput.files[0];
+                    if (!file) {
+                        e.preventDefault();
+                        errorBox.textContent = 'Bắt buộc phải chọn ảnh chứng từ giao hàng (POD) trước khi xác nhận.';
+                        errorBox.classList.remove('d-none');
+                        return;
+                    }
+                    const submitBtn = document.getElementById('podSubmitBtn');
+                    if (submitBtn && !submitBtn.disabled) {
+                        submitBtn.disabled = true;
+                        submitBtn.innerHTML = '<span class="spinner-border spinner-border-sm me-1"></span>Đang tải ảnh POD...';
+                    }
+                });
+            }
+
+            document.querySelectorAll('form.js-disable-on-submit').forEach(function (form) {
+                form.addEventListener('submit', function () {
+                    const submitBtn = form.querySelector('button[type="submit"]');
+                    if (submitBtn && !submitBtn.disabled) {
+                        submitBtn.disabled = true;
+                        submitBtn.insertAdjacentHTML('afterbegin',
+                            '<span class="spinner-border spinner-border-sm me-1" role="status" aria-hidden="true"></span>');
+                    }
+                });
+            });
+        });
+    </script>
+</th:block>
+</body>
+</html>

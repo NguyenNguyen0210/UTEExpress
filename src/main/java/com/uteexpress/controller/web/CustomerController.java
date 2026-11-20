@@ -12,6 +12,7 @@ import com.uteexpress.enums.PaymentStatus;
 import com.uteexpress.enums.ShipmentStatus;
 import com.uteexpress.exception.BusinessException;
 import com.uteexpress.security.CustomUserDetails;
+import com.uteexpress.service.CsvExportService;
 import com.uteexpress.service.CustomerAddressService;
 import com.uteexpress.service.CustomerProfileService;
 import com.uteexpress.service.CustomerShipmentService;
@@ -28,6 +29,9 @@ import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.domain.Sort;
 import org.springframework.format.annotation.DateTimeFormat;
+import org.springframework.http.HttpHeaders;
+import org.springframework.http.MediaType;
+import org.springframework.http.ResponseEntity;
 import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import org.springframework.stereotype.Controller;
 import org.springframework.ui.Model;
@@ -60,6 +64,7 @@ public class CustomerController {
     private final ShipmentService shipmentService;
     private final ShipmentStateMachine shipmentStateMachine;
     private final VnPayService vnPayService;
+    private final CsvExportService csvExportService;
 
     @GetMapping({"", "/"})
     public String dashboard(@AuthenticationPrincipal CustomUserDetails currentUser, Model model) {
@@ -94,6 +99,30 @@ public class CustomerController {
         model.addAttribute("from", from);
         model.addAttribute("to", to);
         return "customer/shipment-list";
+    }
+
+    @GetMapping("/shipments/export")
+    public ResponseEntity<byte[]> exportShipmentsCsv(
+            @RequestParam(name = "tab", defaultValue = "all") String tab,
+            @RequestParam(name = "keyword", required = false) String keyword,
+            @RequestParam(name = "from", required = false)
+            @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate from,
+            @RequestParam(name = "to", required = false)
+            @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate to,
+            @AuthenticationPrincipal CustomUserDetails currentUser) {
+        String activeTab = customerShipmentService.normalizeTab(tab);
+        Pageable exportPage = PageRequest.of(0, 1000, Sort.by(Sort.Direction.DESC, "createdAt", "id"));
+        List<Shipment> shipments = customerShipmentService.searchCustomerShipments(
+                currentUser.getId(), activeTab, keyword, from, to, exportPage
+        ).getContent();
+
+        byte[] csvBytes = csvExportService.exportShipmentsCsv(shipments);
+        String filename = "UTEExpress-VanDon-" + LocalDate.now() + ".csv";
+        return ResponseEntity.ok()
+                .contentType(MediaType.parseMediaType("text/csv; charset=UTF-8"))
+                .header(HttpHeaders.CONTENT_DISPOSITION, "attachment; filename=\"" + filename + "\"")
+                .contentLength(csvBytes.length)
+                .body(csvBytes);
     }
 
     @GetMapping("/shipments/new")

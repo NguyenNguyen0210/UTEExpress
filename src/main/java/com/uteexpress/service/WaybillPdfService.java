@@ -37,6 +37,7 @@ import java.nio.charset.StandardCharsets;
 import java.text.DecimalFormat;
 import java.text.DecimalFormatSymbols;
 import java.util.EnumMap;
+import java.util.List;
 import java.util.Locale;
 import java.util.Map;
 
@@ -65,9 +66,21 @@ public class WaybillPdfService {
     private volatile byte[] regularFontBytes;
     private volatile byte[] boldFontBytes;
 
+    private static final int MAX_BATCH_WAYBILLS = 50;
+
     public byte[] generateWaybillPdf(Shipment shipment, String size) {
         if (shipment == null) {
             throw new BusinessException("Không tìm thấy thông tin vận đơn để xuất tem PDF");
+        }
+        return generateBatchWaybillPdf(List.of(shipment), size);
+    }
+
+    public byte[] generateBatchWaybillPdf(List<Shipment> shipments, String size) {
+        if (shipments == null || shipments.isEmpty()) {
+            throw new BusinessException("Vui lòng chọn ít nhất một vận đơn để in tem PDF");
+        }
+        if (shipments.size() > MAX_BATCH_WAYBILLS) {
+            throw new BusinessException("Chỉ hỗ trợ in hàng loạt tối đa " + MAX_BATCH_WAYBILLS + " tem vận đơn mỗi lần");
         }
 
         boolean isA5 = "A5".equalsIgnoreCase(size != null ? size.trim() : "");
@@ -97,77 +110,90 @@ public class WaybillPdfService {
             PdfWriter.getInstance(document, baos);
             document.open();
 
-            String trackingCode = safeText(shipment.getTrackingCode(), "N/A");
-            document.addTitle("Tem vận đơn UTEExpress - " + trackingCode);
+            String docTitle = shipments.size() == 1
+                    ? "Tem vận đơn UTEExpress - " + safeText(shipments.get(0).getTrackingCode(), "N/A")
+                    : "In hàng loạt " + shipments.size() + " tem vận đơn UTEExpress";
+            document.addTitle(docTitle);
             document.addAuthor("UTEExpress Logistics");
             document.addSubject("Waybill " + (isA5 ? "A5" : "A6"));
 
-            PdfPTable outer = new PdfPTable(1);
-            outer.setWidthPercentage(100);
+            for (int i = 0; i < shipments.size(); i++) {
+                Shipment shipment = shipments.get(i);
+                if (shipment == null) {
+                    continue;
+                }
+                if (i > 0) {
+                    document.newPage();
+                }
 
-            // 1. Header: [UTEExpress] | GÓI: NHANH (EXPRESS)
-            outer.addCell(buildHeaderCell(shipment, brandWhiteFont, brandOrangeFont, serviceHeaderFont, scale));
+                String trackingCode = safeText(shipment.getTrackingCode(), "N/A");
+                PdfPTable outer = new PdfPTable(1);
+                outer.setWidthPercentage(100);
 
-            // 2. Code128 Barcode + Tracking Code
-            outer.addCell(buildBarcodeCell(trackingCode, trackingCodeFont, isA5, scale));
+                // 1. Header: [UTEExpress] | GÓI: NHANH (EXPRESS)
+                outer.addCell(buildHeaderCell(shipment, brandWhiteFont, brandOrangeFont, serviceHeaderFont, scale));
 
-            // 3. Large Bold Routing Code: HCM-TD01 --> HN-CG01
-            outer.addCell(buildRoutingCell(shipment, routingFont, scale));
+                // 2. Code128 Barcode + Tracking Code
+                outer.addCell(buildBarcodeCell(trackingCode, trackingCodeFont, isA5, scale));
 
-            // 4. Sender block
-            outer.addCell(buildPartyCell(
-                    "TỪ: ",
-                    shipment.getSenderName(),
-                    shipment.getSenderPhone(),
-                    formatFullAddress(shipment.getSenderAddress(), shipment.getSenderDistrict(), shipment.getSenderProvince()),
-                    labelBoldFont,
-                    bodyRegularFont,
-                    scale
-            ));
+                // 3. Large Bold Routing Code: HCM-TD01 --> HN-CG01
+                outer.addCell(buildRoutingCell(shipment, routingFont, scale));
 
-            // 5. Receiver block
-            outer.addCell(buildPartyCell(
-                    "ĐẾN: ",
-                    shipment.getReceiverName(),
-                    shipment.getReceiverPhone(),
-                    formatFullAddress(shipment.getReceiverAddress(), shipment.getReceiverDistrict(), shipment.getReceiverProvince()),
-                    labelBoldFont,
-                    bodyRegularFont,
-                    scale
-            ));
+                // 4. Sender block
+                outer.addCell(buildPartyCell(
+                        "TỪ: ",
+                        shipment.getSenderName(),
+                        shipment.getSenderPhone(),
+                        formatFullAddress(shipment.getSenderAddress(), shipment.getSenderDistrict(), shipment.getSenderProvince()),
+                        labelBoldFont,
+                        bodyRegularFont,
+                        scale
+                ));
 
-            // 6. Lower 2-column section: Left (Item + Weight + Fragile + Inspection + Collect Amount) | Right (QR + Signature)
-            outer.addCell(buildLowerSectionCell(
-                    shipment,
-                    trackingCode,
-                    labelBoldFont,
-                    bodyRegularFont,
-                    bodyMutedFont,
-                    fragileFont,
-                    collectLabelFont,
-                    collectAmountFont,
-                    paidAmountFont,
-                    isA5,
-                    scale
-            ));
+                // 5. Receiver block
+                outer.addCell(buildPartyCell(
+                        "ĐẾN: ",
+                        shipment.getReceiverName(),
+                        shipment.getReceiverPhone(),
+                        formatFullAddress(shipment.getReceiverAddress(), shipment.getReceiverDistrict(), shipment.getReceiverProvince()),
+                        labelBoldFont,
+                        bodyRegularFont,
+                        scale
+                ));
 
-            // 7. Footer
-            PdfPCell footerCell = new PdfPCell(new Phrase(
-                    "Lưu ý: Giao tối đa 3 lần trước khi chuyển hoàn.",
-                    footerFont
-            ));
-            footerCell.setHorizontalAlignment(Element.ALIGN_CENTER);
-            footerCell.setVerticalAlignment(Element.ALIGN_MIDDLE);
-            footerCell.setPaddingTop(3.5f * scale);
-            footerCell.setPaddingBottom(3.5f * scale);
-            footerCell.setPaddingLeft(5f * scale);
-            footerCell.setPaddingRight(5f * scale);
-            applyBorder(footerCell);
-            outer.addCell(footerCell);
+                // 6. Lower 2-column section
+                outer.addCell(buildLowerSectionCell(
+                        shipment,
+                        trackingCode,
+                        labelBoldFont,
+                        bodyRegularFont,
+                        bodyMutedFont,
+                        fragileFont,
+                        collectLabelFont,
+                        collectAmountFont,
+                        paidAmountFont,
+                        isA5,
+                        scale
+                ));
 
-            document.add(outer);
+                // 7. Footer
+                PdfPCell footerCell = new PdfPCell(new Phrase(
+                        "Lưu ý: Giao tối đa 3 lần trước khi chuyển hoàn.",
+                        footerFont
+                ));
+                footerCell.setHorizontalAlignment(Element.ALIGN_CENTER);
+                footerCell.setVerticalAlignment(Element.ALIGN_MIDDLE);
+                footerCell.setPaddingTop(3.5f * scale);
+                footerCell.setPaddingBottom(3.5f * scale);
+                footerCell.setPaddingLeft(5f * scale);
+                footerCell.setPaddingRight(5f * scale);
+                applyBorder(footerCell);
+                outer.addCell(footerCell);
+
+                document.add(outer);
+            }
+
             document.close();
-
             return baos.toByteArray();
         } catch (BusinessException ex) {
             throw ex;

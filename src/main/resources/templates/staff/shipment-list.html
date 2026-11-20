@@ -145,24 +145,49 @@
         </div>
     </div>
 
-    <!-- Shipments Table -->
+    <!-- Shipments Table with Batch PDF Selection -->
     <div class="card">
-        <div class="table-responsive">
-            <table class="table table-hover align-middle mb-0">
-                <thead class="table-light">
-                <tr>
-                    <th>Mã vận đơn</th>
-                    <th>Định tuyến Hub</th>
-                    <th>Người gửi / Người nhận</th>
-                    <th>Shipper phụ trách</th>
-                    <th>Trạng thái</th>
-                    <th class="text-end">COD &amp; Cước</th>
-                    <th class="text-end">Thao tác</th>
-                </tr>
-                </thead>
-                <tbody>
-                <tr th:each="s : ${shipmentsPage.content}">
-                    <td>
+        <form id="staffBatchPrintForm"
+              th:action="@{/shipments/waybill/batch}"
+              method="post"
+              target="_blank">
+            <div id="staffBatchBar" class="px-3 py-2 bg-primary-subtle border-bottom d-none align-items-center justify-content-between flex-wrap gap-2">
+                <span class="small fw-semibold text-primary">
+                    <i class="bi bi-check2-square me-1"></i>Đã chọn <strong id="staffSelectedCount">0</strong> vận đơn
+                </span>
+                <div class="d-flex gap-2">
+                    <button type="submit" name="size" value="A6" class="btn btn-ute-navy btn-sm">
+                        <i class="bi bi-printer-fill me-1"></i>In tem hàng loạt (A6)
+                    </button>
+                    <button type="submit" name="size" value="A5" class="btn btn-outline-primary btn-sm">
+                        <i class="bi bi-file-earmark-pdf me-1"></i>In hàng loạt (A5)
+                    </button>
+                </div>
+            </div>
+
+            <div class="table-responsive">
+                <table class="table table-hover align-middle mb-0">
+                    <thead class="table-light">
+                    <tr>
+                        <th style="width: 36px;">
+                            <input type="checkbox" id="staffSelectAll" class="form-check-input" title="Chọn tất cả trang này">
+                        </th>
+                        <th>Mã vận đơn</th>
+                        <th>Định tuyến Hub</th>
+                        <th>Người gửi / Người nhận</th>
+                        <th>Shipper phụ trách</th>
+                        <th>Trạng thái</th>
+                        <th class="text-end">COD &amp; Cước</th>
+                        <th class="text-end">Thao tác</th>
+                    </tr>
+                    </thead>
+                    <tbody>
+                    <tr th:each="s : ${shipmentsPage.content}">
+                        <td>
+                            <input type="checkbox" name="shipmentIds" th:value="${s.id}"
+                                   class="form-check-input staff-shipment-checkbox">
+                        </td>
+                        <td>
                         <a th:href="@{/staff/shipments/{id}(id=${s.id})}"
                            class="tracking-code fw-bold text-primary text-decoration-none"
                            th:text="${s.trackingCode}">UTE261120A8K4P2</a>
@@ -251,7 +276,7 @@
                     </td>
                 </tr>
                 <tr th:if="${shipmentsPage.empty}">
-                    <td colspan="7" class="text-center py-5">
+                    <td colspan="8" class="text-center py-5">
                         <i class="bi bi-inbox text-muted display-5 d-block mb-2"></i>
                         <div class="fw-semibold text-dark">Không có vận đơn nào trong mục này</div>
                         <div class="small text-muted mt-1">
@@ -266,7 +291,8 @@
                 </tr>
                 </tbody>
             </table>
-        </div>
+            </div>
+        </form>
 
         <!-- Pagination -->
         <div class="card-footer bg-white d-flex flex-wrap align-items-center justify-content-between gap-2 py-3"
@@ -302,5 +328,35 @@
         </div>
     </div>
 </div>
+<th:block layout:fragment="scripts">
+    <script>
+        (function () {
+            const selectAll = document.getElementById('staffSelectAll');
+            const bar = document.getElementById('staffBatchBar');
+            const countEl = document.getElementById('staffSelectedCount');
+            const boxes = Array.from(document.querySelectorAll('.staff-shipment-checkbox'));
+            if (!bar || boxes.length === 0) return;
+
+            function refreshBar() {
+                const checked = boxes.filter(b => b.checked).length;
+                countEl.textContent = String(checked);
+                bar.classList.toggle('d-none', checked === 0);
+                bar.classList.toggle('d-flex', checked > 0);
+                if (selectAll) {
+                    selectAll.checked = checked > 0 && checked === boxes.length;
+                    selectAll.indeterminate = checked > 0 && checked < boxes.length;
+                }
+            }
+
+            if (selectAll) {
+                selectAll.addEventListener('change', function () {
+                    boxes.forEach(b => { b.checked = selectAll.checked; });
+                    refreshBar();
+                });
+            }
+            boxes.forEach(b => b.addEventListener('change', refreshBar));
+        })();
+    </script>
+</th:block>
 </body>
 </html>

@@ -1,0 +1,147 @@
+<!DOCTYPE html>
+<html lang="vi"
+      xmlns:th="http://www.thymeleaf.org"
+      xmlns:layout="http://www.ultraq.net.nz/thymeleaf/layout"
+      layout:decorate="~{layout/base-portal}">
+<head>
+    <title>Quản lý Hoàn tiền VNPay</title>
+</head>
+<body>
+<h5 layout:fragment="page-title"><i class="bi bi-arrow-counterclockwise me-2"></i>Quản lý Hoàn tiền cước VNPay</h5>
+
+<div layout:fragment="content">
+    <!-- KPI Row -->
+    <div class="row row-cols-1 row-cols-md-3 g-3 mb-4">
+        <div class="col">
+            <div class="card h-100 border-warning-subtle">
+                <div class="card-body">
+                    <div class="small text-muted fw-semibold text-uppercase">Đơn chờ hoàn tiền</div>
+                    <div class="fs-2 fw-bold font-mono text-warning-emphasis mt-1" th:text="${#lists.size(pendingRefunds)}">0</div>
+                    <div class="small text-muted">Đơn đã thanh toán VNPay nhưng bị hủy hợp lệ (BR-05)</div>
+                </div>
+            </div>
+        </div>
+        <div class="col">
+            <div class="card h-100">
+                <div class="card-body">
+                    <div class="small text-muted fw-semibold text-uppercase">Tổng tiền cần hoàn</div>
+                    <div class="fs-4 fw-bold money-mono mt-1" style="color: #EA580C;"
+                         th:text="${#numbers.formatDecimal(pendingTotal, 1, 'POINT', 0, 'COMMA') + ' đ'}">0 đ</div>
+                    <div class="small text-muted">Chờ Admin chuyển hoàn cho khách hàng</div>
+                </div>
+            </div>
+        </div>
+        <div class="col">
+            <div class="card h-100 border-success-subtle">
+                <div class="card-body">
+                    <div class="small text-muted fw-semibold text-uppercase">Đã hoàn tiền</div>
+                    <div class="fs-4 fw-bold money-mono text-success mt-1"
+                         th:text="${#numbers.formatDecimal(refundedTotal, 1, 'POINT', 0, 'COMMA') + ' đ'}">0 đ</div>
+                    <div class="small text-muted">
+                        <strong th:text="${#lists.size(completedRefunds)}">0</strong> vận đơn đã hoàn tất
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Section 1: Pending Refunds -->
+    <div class="card mb-4 shadow-sm">
+        <div class="card-header py-3 d-flex justify-content-between align-items-center">
+            <span class="fw-bold text-primary">
+                <i class="bi bi-hourglass-split text-warning me-2"></i>1. Danh sách vận đơn chờ hoàn tiền VNPay
+            </span>
+            <span class="badge bg-warning-subtle text-warning-emphasis"
+                  th:text="${#lists.size(pendingRefunds) + ' đơn'}">0 đơn</span>
+        </div>
+
+        <div th:if="${#lists.isEmpty(pendingRefunds)}" class="card-body text-center py-4 text-muted">
+            <i class="bi bi-check2-circle text-success fs-2 d-block mb-2"></i>
+            <div class="fw-semibold text-dark">Không có vận đơn nào đang chờ hoàn tiền VNPay</div>
+        </div>
+
+        <div th:unless="${#lists.isEmpty(pendingRefunds)}" class="table-responsive">
+            <table class="table table-hover align-middle mb-0">
+                <thead class="table-light">
+                <tr>
+                    <th>Mã vận đơn</th>
+                    <th>Khách hàng &amp; Ngân hàng nhận hoàn</th>
+                    <th>Mã GD VNPay</th>
+                    <th class="text-end">Số tiền hoàn</th>
+                    <th style="min-width: 280px;">Xác nhận hoàn tiền</th>
+                </tr>
+                </thead>
+                <tbody>
+                <tr th:each="s : ${pendingRefunds}">
+                    <td>
+                        <a th:href="@{/staff/shipments/{id}(id=${s.id})}"
+                           class="tracking-code fw-bold text-primary text-decoration-none"
+                           th:text="${s.trackingCode}">UTE...</a>
+                        <div class="small text-muted" th:text="${s.itemName}">Hàng hóa</div>
+                    </td>
+                    <td>
+                        <div class="fw-semibold" th:text="${s.customer != null ? s.customer.fullName : s.senderName}">Shop</div>
+                        <div class="small text-muted font-mono" th:if="${s.customer != null and s.customer.bankAccountNumber != null}"
+                             th:text="${s.customer.bankName + ' · ' + s.customer.bankAccountNumber}">VCB</div>
+                    </td>
+                    <td class="font-mono small" th:text="${s.vnpTransactionNo != null ? s.vnpTransactionNo : '—'}">—</td>
+                    <td class="text-end money-mono fw-bold" style="color: #EA580C;"
+                        th:text="${#numbers.formatDecimal(s.totalFee, 1, 'POINT', 0, 'COMMA') + ' đ'}">0 đ</td>
+                    <td>
+                        <form th:action="@{/admin/refunds/{id}/confirm(id=${s.id})}" method="post" class="d-flex gap-2">
+                            <input type="text" name="refundRef" class="form-control form-control-sm font-mono"
+                                   placeholder="Mã GD hoàn (VD: VNP-RF-001)" required>
+                            <button type="submit" class="btn btn-success btn-sm text-nowrap">
+                                <i class="bi bi-check-lg me-1"></i>Đã hoàn
+                            </button>
+                        </form>
+                    </td>
+                </tr>
+                </tbody>
+            </table>
+        </div>
+    </div>
+
+    <!-- Section 2: Completed Refunds History -->
+    <div class="card shadow-sm">
+        <div class="card-header py-3">
+            <span class="fw-bold text-primary">
+                <i class="bi bi-check-circle-fill text-success me-2"></i>2. Lịch sử vận đơn đã hoàn tiền
+            </span>
+        </div>
+
+        <div th:if="${#lists.isEmpty(completedRefunds)}" class="card-body text-center py-4 text-muted small">
+            Chưa có giao dịch hoàn tiền nào được ghi nhận.
+        </div>
+
+        <div th:unless="${#lists.isEmpty(completedRefunds)}" class="table-responsive">
+            <table class="table table-hover align-middle mb-0">
+                <thead class="table-light">
+                <tr>
+                    <th>Mã vận đơn</th>
+                    <th>Khách hàng</th>
+                    <th>Mã GD VNPay gốc</th>
+                    <th class="text-end">Số tiền đã hoàn</th>
+                    <th>Trạng thái</th>
+                </tr>
+                </thead>
+                <tbody>
+                <tr th:each="s : ${completedRefunds}">
+                    <td>
+                        <a th:href="@{/staff/shipments/{id}(id=${s.id})}"
+                           class="tracking-code fw-bold text-primary text-decoration-none"
+                           th:text="${s.trackingCode}">UTE...</a>
+                    </td>
+                    <td th:text="${s.customer != null ? s.customer.fullName : s.senderName}">Shop</td>
+                    <td class="font-mono small" th:text="${s.vnpTransactionNo != null ? s.vnpTransactionNo : '—'}">—</td>
+                    <td class="text-end money-mono fw-bold text-success"
+                        th:text="${#numbers.formatDecimal(s.totalFee, 1, 'POINT', 0, 'COMMA') + ' đ'}">0 đ</td>
+                    <td><span class="badge bg-success-subtle text-success">Đã hoàn tiền</span></td>
+                </tr>
+                </tbody>
+            </table>
+        </div>
+    </div>
+</div>
+</body>
+</html>

@@ -35,9 +35,15 @@
         <div class="text-muted small">
             Tổng cộng <strong class="text-dark" th:text="${tabCounts['all'] != null ? tabCounts['all'] : 0}">0</strong> vận đơn trong tài khoản của bạn.
         </div>
-        <a th:href="@{/customer/shipments/new}" class="btn btn-ute-orange btn-sm px-3">
-            <i class="bi bi-plus-circle-fill me-1"></i>Tạo vận đơn mới
-        </a>
+        <div class="d-flex flex-wrap gap-2">
+            <a th:href="@{/customer/shipments/export(tab=${activeTab}, keyword=${keyword}, from=${from}, to=${to})}"
+               class="btn btn-outline-success btn-sm px-3">
+                <i class="bi bi-file-earmark-spreadsheet me-1"></i>Xuất CSV / Excel
+            </a>
+            <a th:href="@{/customer/shipments/new}" class="btn btn-ute-orange btn-sm px-3">
+                <i class="bi bi-plus-circle-fill me-1"></i>Tạo vận đơn mới
+            </a>
+        </div>
     </div>
 
     <!-- Main Container Card with 8 Status Tabs -->
@@ -176,23 +182,50 @@
             </div>
         </div>
 
-        <!-- Shipments Table -->
-        <div th:unless="${shipmentsPage.isEmpty()}" class="table-responsive">
-            <table class="table table-hover align-middle mb-0">
-                <thead class="table-light">
-                <tr>
-                    <th>Mã vận đơn & Hàng hóa</th>
-                    <th>Người nhận</th>
-                    <th>Định tuyến Hub</th>
-                    <th class="text-end">Tiền COD</th>
-                    <th class="text-end">Tổng cước</th>
-                    <th>Trạng thái</th>
-                    <th class="text-end">Thao tác</th>
-                </tr>
-                </thead>
-                <tbody>
-                <tr th:each="s : ${shipmentsPage.content}">
-                    <td>
+        <!-- Shipments Table with Batch PDF Selection -->
+        <form th:unless="${shipmentsPage.isEmpty()}"
+              id="customerBatchPrintForm"
+              th:action="@{/shipments/waybill/batch}"
+              method="post"
+              target="_blank">
+            <!-- Batch Action Toolbar -->
+            <div id="customerBatchBar" class="px-3 py-2 bg-primary-subtle border-bottom d-none align-items-center justify-content-between flex-wrap gap-2">
+                <span class="small fw-semibold text-primary">
+                    <i class="bi bi-check2-square me-1"></i>Đã chọn <strong id="customerSelectedCount">0</strong> vận đơn
+                </span>
+                <div class="d-flex gap-2">
+                    <button type="submit" name="size" value="A6" class="btn btn-ute-navy btn-sm">
+                        <i class="bi bi-printer-fill me-1"></i>In tem hàng loạt (A6)
+                    </button>
+                    <button type="submit" name="size" value="A5" class="btn btn-outline-primary btn-sm">
+                        <i class="bi bi-file-earmark-pdf me-1"></i>In hàng loạt (A5)
+                    </button>
+                </div>
+            </div>
+
+            <div class="table-responsive">
+                <table class="table table-hover align-middle mb-0">
+                    <thead class="table-light">
+                    <tr>
+                        <th style="width: 36px;">
+                            <input type="checkbox" id="customerSelectAll" class="form-check-input" title="Chọn tất cả trang này">
+                        </th>
+                        <th>Mã vận đơn & Hàng hóa</th>
+                        <th>Người nhận</th>
+                        <th>Định tuyến Hub</th>
+                        <th class="text-end">Tiền COD</th>
+                        <th class="text-end">Tổng cước</th>
+                        <th>Trạng thái</th>
+                        <th class="text-end">Thao tác</th>
+                    </tr>
+                    </thead>
+                    <tbody>
+                    <tr th:each="s : ${shipmentsPage.content}">
+                        <td>
+                            <input type="checkbox" name="shipmentIds" th:value="${s.id}"
+                                   class="form-check-input customer-shipment-checkbox">
+                        </td>
+                        <td>
                         <div class="d-flex align-items-center gap-1 flex-wrap">
                             <a th:href="@{/customer/shipments/{id}(id=${s.id})}"
                                class="tracking-code fw-bold text-primary text-decoration-none"
@@ -262,7 +295,8 @@
                 </tr>
                 </tbody>
             </table>
-        </div>
+            </div>
+        </form>
 
         <!-- Pagination Footer -->
         <div th:if="${shipmentsPage.totalPages > 0}"
@@ -298,5 +332,35 @@
         </div>
     </div>
 </div>
+<th:block layout:fragment="scripts">
+    <script>
+        (function () {
+            const selectAll = document.getElementById('customerSelectAll');
+            const bar = document.getElementById('customerBatchBar');
+            const countEl = document.getElementById('customerSelectedCount');
+            const boxes = Array.from(document.querySelectorAll('.customer-shipment-checkbox'));
+            if (!bar || boxes.length === 0) return;
+
+            function refreshBar() {
+                const checked = boxes.filter(b => b.checked).length;
+                countEl.textContent = String(checked);
+                bar.classList.toggle('d-none', checked === 0);
+                bar.classList.toggle('d-flex', checked > 0);
+                if (selectAll) {
+                    selectAll.checked = checked > 0 && checked === boxes.length;
+                    selectAll.indeterminate = checked > 0 && checked < boxes.length;
+                }
+            }
+
+            if (selectAll) {
+                selectAll.addEventListener('change', function () {
+                    boxes.forEach(b => { b.checked = selectAll.checked; });
+                    refreshBar();
+                });
+            }
+            boxes.forEach(b => b.addEventListener('change', refreshBar));
+        })();
+    </script>
+</th:block>
 </body>
 </html>

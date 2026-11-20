@@ -1,0 +1,257 @@
+<!DOCTYPE html>
+<html lang="vi"
+      xmlns:th="http://www.thymeleaf.org"
+      xmlns:layout="http://www.ultraq.net.nz/thymeleaf/layout"
+      layout:decorate="~{layout/base-portal}">
+<head>
+    <title>Tổng quan Bưu cục</title>
+    <style>
+        .kpi-card {
+            transition: transform 0.15s ease, box-shadow 0.15s ease;
+        }
+        .kpi-card:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 6px 16px rgba(13, 71, 161, 0.08);
+        }
+        .kpi-icon-box {
+            width: 48px;
+            height: 48px;
+            border-radius: 10px;
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 1.35rem;
+            flex-shrink: 0;
+        }
+    </style>
+</head>
+<body>
+<h5 layout:fragment="page-title"><i class="bi bi-speedometer2 me-2"></i>Tổng quan Bưu cục</h5>
+
+<div layout:fragment="content">
+    <!-- Hub Scope Banner -->
+    <div class="card mb-4 border-0 shadow-sm bg-white">
+        <div class="card-body py-3 px-4 d-flex flex-wrap align-items-center justify-content-between gap-3">
+            <div class="d-flex align-items-center gap-3">
+                <div class="kpi-icon-box bg-primary-subtle text-primary">
+                    <i class="bi bi-building-gear"></i>
+                </div>
+                <div>
+                    <div class="text-uppercase small text-muted fw-semibold">Phạm vi vận hành</div>
+                    <h5 class="mb-0 fw-bold text-primary font-mono" th:text="${summary.hubLabel}">HCM-TD01 — Bưu cục Thủ Đức</h5>
+                </div>
+            </div>
+            <div class="d-flex flex-wrap gap-2">
+                <a th:href="@{/staff/shipments}" class="btn btn-ute-navy btn-sm px-3">
+                    <i class="bi bi-diagram-3 me-1"></i>Điều phối Vận đơn
+                </a>
+                <a th:href="@{/staff/cod}" class="btn btn-ute-orange btn-sm px-3">
+                    <i class="bi bi-wallet2 me-1"></i>Thu tiền COD Shipper
+                </a>
+            </div>
+        </div>
+    </div>
+
+    <!-- 6 Operational KPI Cards -->
+    <div class="row row-cols-1 row-cols-sm-2 row-cols-xl-3 g-3 mb-4">
+        <!-- 1. Waiting Pickup -->
+        <div class="col">
+            <a th:href="@{/staff/shipments(tab='pending_pickup')}" class="card kpi-card h-100 text-decoration-none text-dark">
+                <div class="card-body d-flex align-items-center justify-content-between gap-3">
+                    <div>
+                        <div class="small text-muted fw-semibold mb-1">Chờ lấy hàng</div>
+                        <div class="fs-2 fw-bold font-mono text-info-emphasis" th:text="${summary.waitingPickupCount}">0</div>
+                        <div class="small text-muted">Đơn mới tạo / Đã phân công lấy</div>
+                    </div>
+                    <div class="kpi-icon-box bg-info-subtle text-info-emphasis">
+                        <i class="bi bi-box-arrow-in-up"></i>
+                    </div>
+                </div>
+            </a>
+        </div>
+
+        <!-- 2. In Origin Hub -->
+        <div class="col">
+            <a th:href="@{/staff/shipments(tab='in_origin')}" class="card kpi-card h-100 text-decoration-none text-dark">
+                <div class="card-body d-flex align-items-center justify-content-between gap-3">
+                    <div>
+                        <div class="small text-muted fw-semibold mb-1">Tại kho gửi</div>
+                        <div class="fs-2 fw-bold font-mono text-primary" th:text="${summary.inOriginHubCount}">0</div>
+                        <div class="small text-muted">Đã lấy / Chờ nhập hoặc xuất kho gửi</div>
+                    </div>
+                    <div class="kpi-icon-box bg-primary-subtle text-primary">
+                        <i class="bi bi-building-check"></i>
+                    </div>
+                </div>
+            </a>
+        </div>
+
+        <!-- 3. Incoming Transit -->
+        <div class="col">
+            <a th:href="@{/staff/shipments(tab='incoming_transit')}" class="card kpi-card h-100 text-decoration-none text-dark">
+                <div class="card-body d-flex align-items-center justify-content-between gap-3">
+                    <div>
+                        <div class="small text-muted fw-semibold mb-1">Trung chuyển đang đến</div>
+                        <div class="fs-2 fw-bold font-mono text-primary" th:text="${summary.incomingTransitCount}">0</div>
+                        <div class="small text-muted">Hàng liên tỉnh sắp tới bưu cục nhận</div>
+                    </div>
+                    <div class="kpi-icon-box bg-primary-subtle text-primary">
+                        <i class="bi bi-truck"></i>
+                    </div>
+                </div>
+            </a>
+        </div>
+
+        <!-- 4. Ready / Out for Delivery -->
+        <div class="col">
+            <a th:href="@{/staff/shipments(tab='ready_delivery')}" class="card kpi-card h-100 text-decoration-none text-dark">
+                <div class="card-body d-flex align-items-center justify-content-between gap-3">
+                    <div>
+                        <div class="small text-muted fw-semibold mb-1">Sẵn sàng giao / Đang giao</div>
+                        <div class="fs-2 fw-bold font-mono" style="color: #C2410C;" th:text="${summary.readyForDeliveryCount}">0</div>
+                        <div class="small text-muted">Tại kho nhận &amp; Shipper đang đi phát</div>
+                    </div>
+                    <div class="kpi-icon-box badge-out-for-delivery">
+                        <i class="bi bi-bicycle"></i>
+                    </div>
+                </div>
+            </a>
+        </div>
+
+        <!-- 5. Failed / Returning -->
+        <div class="col">
+            <a th:href="@{/staff/shipments(tab='failed_return')}" class="card kpi-card h-100 text-decoration-none text-dark">
+                <div class="card-body d-flex align-items-center justify-content-between gap-3">
+                    <div>
+                        <div class="small text-muted fw-semibold mb-1">Giao thất bại / Hoàn hàng</div>
+                        <div class="fs-2 fw-bold font-mono text-danger" th:text="${summary.failedOrReturningCount}">0</div>
+                        <div class="small text-muted">Cần sắp xếp giao lại hoặc chuyển hoàn</div>
+                    </div>
+                    <div class="kpi-icon-box bg-danger-subtle text-danger">
+                        <i class="bi bi-arrow-return-left"></i>
+                    </div>
+                </div>
+            </a>
+        </div>
+
+        <!-- 6. Held COD by Shipper -->
+        <div class="col">
+            <a th:href="@{/staff/cod}" class="card kpi-card h-100 text-decoration-none text-dark">
+                <div class="card-body d-flex align-items-center justify-content-between gap-3">
+                    <div class="min-w-0">
+                        <div class="small text-muted fw-semibold mb-1">COD Shipper đang giữ</div>
+                        <div class="fs-4 fw-bold money-mono text-truncate" style="color: #EA580C;"
+                             th:text="${summary.heldCodAmount != null ? #numbers.formatDecimal(summary.heldCodAmount, 0, 'POINT', 0, 'COMMA') + ' đ' : '0 đ'}">0 đ</div>
+                        <div class="small text-muted">
+                            <span class="fw-semibold text-dark" th:text="${summary.heldCodShipmentCount}">0</span> vận đơn chờ thu về bưu cục
+                        </div>
+                    </div>
+                    <div class="kpi-icon-box bg-warning-subtle text-warning-emphasis">
+                        <i class="bi bi-cash-coin"></i>
+                    </div>
+                </div>
+            </a>
+        </div>
+    </div>
+
+    <!-- Urgent Shipments Table -->
+    <div class="card">
+        <div class="card-header py-3 d-flex flex-wrap align-items-center justify-content-between gap-2">
+            <div class="d-flex align-items-center gap-2">
+                <i class="bi bi-lightning-charge-fill text-warning fs-5"></i>
+                <span class="fw-bold text-primary">Đơn hàng cần điều phối / xử lý gấp</span>
+                <span class="badge rounded-pill bg-danger-subtle text-danger"
+                      th:text="${#lists.size(summary.urgentShipments)}">0</span>
+            </div>
+            <a th:href="@{/staff/shipments}" class="btn btn-outline-primary btn-sm">
+                Xem toàn bộ vận đơn <i class="bi bi-arrow-right ms-1"></i>
+            </a>
+        </div>
+
+        <div class="table-responsive">
+            <table class="table table-hover align-middle mb-0">
+                <thead class="table-light">
+                <tr>
+                    <th>Mã vận đơn</th>
+                    <th>Tuyến Hub</th>
+                    <th>Người gửi / Người nhận</th>
+                    <th>Trạng thái</th>
+                    <th class="text-end">COD &amp; Cước</th>
+                    <th>Cập nhật</th>
+                    <th class="text-end">Thao tác</th>
+                </tr>
+                </thead>
+                <tbody>
+                <tr th:each="s : ${summary.urgentShipments}">
+                    <td>
+                        <a th:href="@{/staff/shipments/{id}(id=${s.id})}"
+                           class="tracking-code fw-bold text-primary text-decoration-none"
+                           th:text="${s.trackingCode}">UTE261120A8K4P2</a>
+                        <div class="d-flex flex-wrap gap-1 mt-1">
+                            <span class="badge bg-light text-secondary border small"
+                                  th:if="${s.serviceType != null}"
+                                  th:text="${s.serviceType.name}">Nhanh</span>
+                            <span class="badge bg-warning-subtle text-warning-emphasis border border-warning small"
+                                  th:if="${s.isFragile}">
+                                <i class="bi bi-exclamation-diamond-fill me-1"></i>Dễ vỡ
+                            </span>
+                        </div>
+                    </td>
+                    <td>
+                        <div class="routing-code small fw-semibold text-dark">
+                            <span th:text="${s.originHub != null ? s.originHub.code : '—'}">HCM-TD01</span>
+                            <i class="bi bi-arrow-right text-warning mx-1"></i>
+                            <span th:text="${s.destHub != null ? s.destHub.code : '—'}">HN-CG01</span>
+                        </div>
+                        <div class="small text-muted"
+                             th:text="${s.originHub != null and s.destHub != null and s.originHub.id == s.destHub.id ? 'Nội vùng' : 'Liên tỉnh'}">
+                            Liên tỉnh
+                        </div>
+                    </td>
+                    <td>
+                        <div class="small">
+                            <span class="text-muted">Gửi:</span>
+                            <span class="fw-semibold" th:text="${s.senderName}">Shop Hoàng Nam</span>
+                            <span class="text-muted font-mono" th:text="'(' + ${s.senderPhone} + ')'"></span>
+                        </div>
+                        <div class="small">
+                            <span class="text-muted">Nhận:</span>
+                            <span class="fw-semibold" th:text="${s.receiverName}">Trần Minh Anh</span>
+                            <span class="text-muted font-mono" th:text="'(' + ${s.receiverPhone} + ')'"></span>
+                        </div>
+                    </td>
+                    <td>
+                        <span th:class="'badge rounded-pill ' + ${s.status.badgeClass}"
+                              th:text="${s.status.label}">Chờ lấy hàng</span>
+                        <div class="small text-danger mt-1 fw-semibold"
+                             th:if="${s.failedDeliveryCount != null and s.failedDeliveryCount > 0}"
+                             th:text="'Thất bại ' + ${s.failedDeliveryCount} + '/3 lần'">Thất bại 1/3 lần</div>
+                    </td>
+                    <td class="text-end">
+                        <div class="money-mono small fw-bold" style="color: #EA580C;"
+                             th:text="'COD: ' + (${s.codAmount != null ? #numbers.formatDecimal(s.codAmount, 0, 'POINT', 0, 'COMMA') : '0'}) + ' đ'">COD: 500.000 đ</div>
+                        <div class="money-mono small text-muted"
+                             th:text="'Cước: ' + (${s.totalFee != null ? #numbers.formatDecimal(s.totalFee, 0, 'POINT', 0, 'COMMA') : '0'}) + ' đ'">Cước: 64.000 đ</div>
+                    </td>
+                    <td class="small font-mono text-muted"
+                        th:text="${s.updatedAt != null ? #temporals.format(s.updatedAt, 'dd/MM/yyyy HH:mm') : '—'}">20/11/2026 09:30</td>
+                    <td class="text-end">
+                        <a th:href="@{/staff/shipments/{id}(id=${s.id})}" class="btn btn-ute-navy btn-sm">
+                            <i class="bi bi-sliders me-1"></i>Điều phối
+                        </a>
+                    </td>
+                </tr>
+                <tr th:if="${#lists.isEmpty(summary.urgentShipments)}">
+                    <td colspan="7" class="text-center py-5">
+                        <i class="bi bi-check2-circle text-success display-5 d-block mb-2"></i>
+                        <div class="fw-semibold text-dark">Tuyệt vời! Không có vận đơn nào đang chờ xử lý gấp.</div>
+                        <div class="small text-muted mt-1">Tất cả vận đơn trong phạm vi bưu cục đã được điều phối đúng tiến độ.</div>
+                    </td>
+                </tr>
+                </tbody>
+            </table>
+        </div>
+    </div>
+</div>
+</body>
+</html>

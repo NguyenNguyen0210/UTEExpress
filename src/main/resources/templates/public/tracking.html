@@ -224,6 +224,12 @@
                                     onclick="copyTrackingCode(this)">
                                 <i class="bi bi-clipboard"></i>
                             </button>
+                            <button type="button" class="btn btn-outline-primary btn-sm py-0 px-2"
+                                    title="Sao chép đường dẫn tra cứu để chia sẻ"
+                                    th:attr="data-share-code=${item.trackingCode}"
+                                    onclick="copyTrackingLink(this)">
+                                <i class="bi bi-share me-1"></i><span class="small">Chia sẻ link</span>
+                            </button>
                             <span class="badge bg-primary-subtle text-primary" th:text="${item.serviceName}">Nhanh</span>
                             <span th:if="${item.fragile}" class="badge bg-warning-subtle text-warning-emphasis border border-warning">
                                 <i class="bi bi-exclamation-diamond-fill me-1"></i>Hàng dễ vỡ
@@ -413,6 +419,22 @@
                         icon.className = 'bi bi-clipboard';
                     }, 1500);
                 }
+            }).catch(function () {});
+        }
+
+        function copyTrackingLink(btn) {
+            const code = btn.getAttribute('data-share-code');
+            if (!code || !navigator.clipboard) return;
+            const shareUrl = window.location.origin + '/tracking?codes=' + encodeURIComponent(code);
+            navigator.clipboard.writeText(shareUrl).then(function () {
+                const label = btn.querySelector('span');
+                const icon = btn.querySelector('i');
+                if (icon) icon.className = 'bi bi-check-lg text-success me-1';
+                if (label) label.textContent = 'Đã chép link!';
+                setTimeout(function () {
+                    if (icon) icon.className = 'bi bi-share me-1';
+                    if (label) label.textContent = 'Chia sẻ link';
+                }, 1800);
             }).catch(function () {});
         }
 

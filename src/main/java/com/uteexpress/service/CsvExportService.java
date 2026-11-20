@@ -1,5 +1,7 @@
 package com.uteexpress.service;
 
+import com.uteexpress.dto.cod.SettlementDetailView;
+import com.uteexpress.entity.CodSettlement;
 import com.uteexpress.entity.Shipment;
 import org.springframework.stereotype.Service;
 
@@ -73,6 +75,56 @@ public class CsvExportService {
                         s.getPayerType() != null ? s.getPayerType().getLabel() : "",
                         s.getPaymentStatus() != null ? s.getPaymentStatus().getLabel() : "",
                         s.getCodStatus() != null ? s.getCodStatus().getLabel() : ""
+                });
+            }
+        });
+    }
+
+    public byte[] exportCodSettlementsCsv(List<SettlementDetailView> views) {
+        String[] headers = {
+                "Mã phiếu đối soát",
+                "Ngày lập",
+                "Khách hàng",
+                "Email",
+                "Ngân hàng",
+                "Số tài khoản",
+                "Chủ tài khoản",
+                "Số vận đơn",
+                "Tổng tiền COD (VNĐ)",
+                "Cấn trừ cước (VNĐ)",
+                "Số tiền thực chuyển (VNĐ)",
+                "Trạng thái",
+                "Mã GD chuyển khoản",
+                "Thời gian thanh toán",
+                "Ghi chú"
+        };
+
+        return buildCsv(headers, writer -> {
+            if (views == null) {
+                return;
+            }
+            for (SettlementDetailView view : views) {
+                if (view == null || view.settlement() == null) {
+                    continue;
+                }
+                CodSettlement st = view.settlement();
+                int shipmentCount = view.shipments() != null ? view.shipments().size() : 0;
+                writeRow(writer, new String[]{
+                        safe(st.getSettlementCode()),
+                        formatDateTime(st.getCreatedAt()),
+                        st.getCustomer() != null ? safe(st.getCustomer().getFullName()) : "",
+                        st.getCustomer() != null ? safe(st.getCustomer().getEmail()) : "",
+                        safe(st.getBankName()),
+                        safe(st.getBankAccountNumber()),
+                        safe(st.getBankAccountHolder()),
+                        String.valueOf(shipmentCount),
+                        formatAmount(st.getTotalCodAmount()),
+                        formatAmount(st.getTotalShippingDeduction()),
+                        formatAmount(st.getNetAmount()),
+                        st.getStatus() != null ? st.getStatus().getLabel() : "",
+                        safe(st.getTransactionRef()),
+                        formatDateTime(st.getSettledAt()),
+                        safe(st.getNote())
                 });
             }
         });

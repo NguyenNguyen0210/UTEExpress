@@ -12,8 +12,12 @@ import com.uteexpress.exception.ResourceNotFoundException;
 import com.uteexpress.repository.UserRepository;
 import com.uteexpress.security.CustomUserDetails;
 import com.uteexpress.service.CodSettlementService;
+import com.uteexpress.service.CsvExportService;
 import com.uteexpress.service.ShipmentService;
 import lombok.RequiredArgsConstructor;
+import org.springframework.http.HttpHeaders;
+import org.springframework.http.MediaType;
+import org.springframework.http.ResponseEntity;
 import org.springframework.security.access.AccessDeniedException;
 import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import org.springframework.stereotype.Controller;
@@ -39,6 +43,7 @@ public class CodController {
     private final CodSettlementService codSettlementService;
     private final ShipmentService shipmentService;
     private final UserRepository userRepository;
+    private final CsvExportService csvExportService;
 
     // ==================== SHIPPER COD SUMMARY (US-7.1) ====================
 
@@ -186,6 +191,18 @@ public class CodController {
         return "redirect:/admin/cod-settlements";
     }
 
+    @GetMapping("/admin/cod-settlements/export")
+    public ResponseEntity<byte[]> exportAdminCodSettlementsCsv() {
+        List<SettlementDetailView> settlements = codSettlementService.getAllSettlements();
+        byte[] csvBytes = csvExportService.exportCodSettlementsCsv(settlements);
+        String filename = "UTEExpress-DoiSoat-COD-Admin-" + java.time.LocalDate.now() + ".csv";
+        return ResponseEntity.ok()
+                .contentType(MediaType.parseMediaType("text/csv; charset=UTF-8"))
+                .header(HttpHeaders.CONTENT_DISPOSITION, "attachment; filename=\"" + filename + "\"")
+                .contentLength(csvBytes.length)
+                .body(csvBytes);
+    }
+
     // ==================== CUSTOMER COD HISTORY (US-7.2) ====================
 
     @GetMapping("/customer/cod")
@@ -217,6 +234,19 @@ public class CodController {
         model.addAttribute("pendingTransferTotal", pendingTransferTotal);
         model.addAttribute("settledNetTotal", settledNetTotal);
         return "customer/cod-list";
+    }
+
+    @GetMapping("/customer/cod/export")
+    public ResponseEntity<byte[]> exportCustomerCodCsv(@AuthenticationPrincipal CustomUserDetails userDetails) {
+        User customer = getCurrentUser(userDetails);
+        List<SettlementDetailView> settlements = codSettlementService.getCustomerSettlements(customer.getId());
+        byte[] csvBytes = csvExportService.exportCodSettlementsCsv(settlements);
+        String filename = "UTEExpress-DoiSoat-COD-" + java.time.LocalDate.now() + ".csv";
+        return ResponseEntity.ok()
+                .contentType(MediaType.parseMediaType("text/csv; charset=UTF-8"))
+                .header(HttpHeaders.CONTENT_DISPOSITION, "attachment; filename=\"" + filename + "\"")
+                .contentLength(csvBytes.length)
+                .body(csvBytes);
     }
 
     private User getCurrentUser(CustomUserDetails userDetails) {

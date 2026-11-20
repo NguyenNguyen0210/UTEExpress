@@ -49,11 +49,11 @@
 
             <div class="d-flex align-items-center gap-2">
                 <div sec:authorize="isAnonymous()" class="d-flex align-items-center gap-2">
-                    <a th:href="@{/customer}" class="btn btn-ute-orange btn-sm public-portal-btn">
-                        <i class="bi bi-person-gear me-1"></i>Vào Cổng Khách hàng
+                    <a th:href="@{/auth/login}" class="btn btn-public-login btn-sm">
+                        <i class="bi bi-person-check me-1"></i>Đăng nhập
                     </a>
-                    <a th:href="@{/auth/login}" class="btn btn-public-icon" title="Đăng nhập">
-                        <i class="bi bi-box-arrow-in-right"></i>
+                    <a th:href="@{/auth/register}" class="btn btn-ute-orange btn-sm public-portal-btn">
+                        <i class="bi bi-person-plus me-1"></i>Đăng ký gửi hàng
                     </a>
                 </div>
                 <div sec:authorize="isAuthenticated()" class="d-flex align-items-center gap-2">

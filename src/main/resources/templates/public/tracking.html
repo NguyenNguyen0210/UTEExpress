@@ -6,6 +6,155 @@
 <head>
     <title>Tra cứu vận đơn</title>
     <style>
+        .tracking-page-wrapper {
+            background-color: #F8FAFC;
+            min-height: calc(100vh - 140px);
+        }
+
+        /* Hero Banner matching proposed mockup */
+        .hero-tracking-redesign {
+            position: relative;
+            overflow: hidden;
+            background: radial-gradient(ellipse at 50% 20%, #1F6AE1 0%, #104BB0 54%, #0A3482 100%);
+            color: #ffffff;
+            padding: 1.35rem 0 1.65rem;
+        }
+
+        .hero-wave-svg {
+            position: absolute;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            width: 100%;
+            height: 100%;
+            pointer-events: none;
+            z-index: 1;
+        }
+
+        .hero-content-inner {
+            position: relative;
+            z-index: 2;
+        }
+
+        .hero-pill-badge {
+            display: inline-flex;
+            align-items: center;
+            gap: 0.42rem;
+            background-color: #FFF4E0;
+            color: #1E293B;
+            font-weight: 700;
+            font-size: 0.82rem;
+            padding: 0.3rem 0.95rem;
+            border-radius: 999px;
+            box-shadow: 0 4px 12px rgba(6, 24, 68, 0.16);
+            margin-bottom: 0.55rem;
+        }
+
+        .hero-tracking-title {
+            font-size: clamp(1.65rem, 2.8vw, 2.25rem);
+            font-weight: 800;
+            line-height: 1.22;
+            letter-spacing: -0.02em;
+            color: #ffffff;
+            margin-bottom: 0.35rem;
+        }
+
+        .hero-tracking-subtitle {
+            color: rgba(255, 255, 255, 0.88);
+            font-size: 0.92rem;
+            margin-bottom: 1rem;
+        }
+
+        .tracking-hero-bar {
+            max-width: 600px;
+            margin: 0 auto;
+            background-color: #ffffff;
+            border-radius: 12px;
+            padding: 0.32rem 0.38rem 0.32rem 0.95rem;
+            box-shadow: 0 14px 32px rgba(6, 27, 73, 0.26);
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+        }
+
+        .tracking-hero-bar input {
+            font-size: 0.88rem;
+            color: #1E293B;
+            padding: 0.32rem 0.25rem;
+        }
+
+        .tracking-hero-bar input::placeholder {
+            color: #64748B;
+        }
+
+        .btn-tracking-submit {
+            background: linear-gradient(135deg, #FF8826 0%, #F97316 100%);
+            color: #ffffff;
+            border: none;
+            border-radius: 9px;
+            padding: 0.5rem 1.35rem;
+            font-weight: 600;
+            font-size: 0.9rem;
+            white-space: nowrap;
+            box-shadow: 0 4px 12px rgba(249, 115, 22, 0.3);
+            transition: transform 0.15s ease, box-shadow 0.15s ease;
+        }
+
+        .btn-tracking-submit:hover,
+        .btn-tracking-submit:focus {
+            background: linear-gradient(135deg, #F97316 0%, #EA580C 100%);
+            color: #ffffff;
+            transform: translateY(-1px);
+        }
+
+        /* Main Result Card */
+        .tracking-result-container {
+            max-width: 950px;
+            margin: 0 auto;
+        }
+
+        .tracking-result-card {
+            background-color: #ffffff;
+            border: 1px solid #E2E8F0;
+            border-radius: 18px;
+            box-shadow: 0 8px 26px rgba(15, 23, 42, 0.05);
+            padding: 1.25rem 1.75rem;
+        }
+
+        .tracking-card-code {
+            color: #163B88;
+            font-size: 1.35rem;
+            font-weight: 800;
+            letter-spacing: -0.01em;
+        }
+
+        .btn-copy-inline {
+            background: transparent;
+            border: none;
+            color: #2563EB;
+            font-size: 1.05rem;
+            padding: 0.15rem 0.35rem;
+            border-radius: 6px;
+            transition: background-color 0.15s ease;
+        }
+
+        .btn-copy-inline:hover {
+            background-color: #EFF6FF;
+            color: #1D4ED8;
+        }
+
+        .live-status-pill {
+            background-color: #DCFCE7;
+            color: #15803D;
+            border-radius: 999px;
+            padding: 0.34rem 0.9rem;
+            font-weight: 600;
+            font-size: 0.81rem;
+            display: inline-flex;
+            align-items: center;
+            gap: 0.45rem;
+        }
+
         .live-dot {
             display: inline-block;
             width: 8px;
@@ -14,77 +163,234 @@
             background-color: #16A34A;
             animation: livePulse 1.6s infinite;
         }
+
         @keyframes livePulse {
             0% { box-shadow: 0 0 0 0 rgba(22, 163, 74, 0.7); }
             70% { box-shadow: 0 0 0 6px rgba(22, 163, 74, 0); }
             100% { box-shadow: 0 0 0 0 rgba(22, 163, 74, 0); }
         }
+
+        /* 5-Step Horizontal Progress Stepper */
         .ute-stepper {
             display: flex;
             align-items: flex-start;
             justify-content: space-between;
             position: relative;
             gap: 0.25rem;
+            padding: 0.35rem 0 0.25rem;
         }
+
         .ute-stepper::before {
             content: '';
             position: absolute;
-            top: 18px;
-            left: 8%;
-            right: 8%;
-            height: 3px;
-            background-color: #E2E8F0;
+            top: 23px;
+            left: 10%;
+            right: 10%;
+            height: 2px;
+            background-color: #CBD5E1;
             z-index: 0;
         }
+
         .ute-step {
             position: relative;
             z-index: 1;
             flex: 1;
             text-align: center;
         }
+
         .ute-step-circle {
             width: 36px;
             height: 36px;
             border-radius: 50%;
-            background-color: #FFFFFF;
-            border: 2px solid #CBD5E1;
-            color: #94A3B8;
+            background-color: #F8FAFC;
+            border: 1.5px solid #CBD5E1;
+            color: #64748B;
             display: inline-flex;
             align-items: center;
             justify-content: center;
             font-size: 0.95rem;
-            font-weight: 600;
             transition: all 0.25s ease;
         }
+
         .ute-step.completed .ute-step-circle {
-            background-color: #0D47A1;
-            border-color: #0D47A1;
+            background-color: #1D4ED8;
+            border-color: #1D4ED8;
             color: #FFFFFF;
         }
+
         .ute-step.current .ute-step-circle {
-            background-color: #F97316;
+            background: linear-gradient(135deg, #FF8E26 0%, #F97316 100%);
             border-color: #F97316;
             color: #FFFFFF;
             box-shadow: 0 0 0 4px rgba(249, 115, 22, 0.22);
         }
+
         .ute-step-label {
             font-size: 0.78rem;
-            margin-top: 0.45rem;
+            margin-top: 0.4rem;
             color: #64748B;
             font-weight: 500;
         }
+
         .ute-step.completed .ute-step-label {
-            color: #0D47A1;
+            color: #1D4ED8;
             font-weight: 600;
         }
+
         .ute-step.current .ute-step-label {
             color: #EA580C;
             font-weight: 700;
         }
+
+        /* 4-Column Horizontal Meta Strip */
+        .tracking-meta-strip {
+            background-color: #F8FAFC;
+            border: 1px solid #E2E8F0;
+            border-radius: 13px;
+            padding: 0.75rem 1.15rem;
+            margin-bottom: 1.15rem;
+        }
+
+        .meta-icon-circle {
+            width: 36px;
+            height: 36px;
+            border-radius: 50%;
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 1rem;
+            flex-shrink: 0;
+        }
+
+        .meta-icon-blue {
+            background-color: #EFF6FF;
+            color: #1D4ED8;
+        }
+
+        .meta-icon-orange {
+            background-color: #FFF7ED;
+            color: #F97316;
+        }
+
+        .meta-label {
+            font-size: 0.74rem;
+            color: #64748B;
+            line-height: 1.2;
+            margin-bottom: 0.1rem;
+        }
+
+        .meta-value {
+            font-weight: 700;
+            color: #0F172A;
+            font-size: 0.87rem;
+            line-height: 1.25;
+        }
+
+        /* Modern Timeline */
+        .timeline-modern {
+            list-style: none;
+            padding-left: 0;
+            margin-bottom: 0;
+            position: relative;
+        }
+
+        .timeline-modern::before {
+            content: '';
+            position: absolute;
+            top: 22px;
+            bottom: 22px;
+            left: 11px;
+            width: 2px;
+            background-color: #CBD5E1;
+        }
+
+        .timeline-modern-item {
+            position: relative;
+            padding-left: 2.15rem;
+            margin-bottom: 0.65rem;
+        }
+
+        .timeline-modern-item:last-child {
+            margin-bottom: 0;
+        }
+
+        .timeline-modern-dot {
+            position: absolute;
+            left: 5px;
+            top: 50%;
+            transform: translateY(-50%);
+            width: 14px;
+            height: 14px;
+            border-radius: 50%;
+            background-color: #ffffff;
+            border: 2px solid #CBD5E1;
+            z-index: 2;
+        }
+
+        .timeline-modern-item.latest .timeline-modern-dot {
+            border: 3.5px solid #F97316;
+            box-shadow: 0 0 0 3px rgba(249, 115, 22, 0.2);
+        }
+
+        .timeline-modern-card {
+            display: flex;
+            align-items: center;
+            gap: 0.85rem;
+            padding: 0.65rem 1.05rem;
+            border-radius: 12px;
+            background-color: #ffffff;
+        }
+
+        .timeline-modern-item.latest .timeline-modern-card {
+            background-color: #FFF4E6;
+        }
+
+        .timeline-modern-icon {
+            width: 34px;
+            height: 34px;
+            border-radius: 50%;
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 0.95rem;
+            flex-shrink: 0;
+            background-color: #F8FAFC;
+            border: 1px solid #E2E8F0;
+            color: #64748B;
+        }
+
+        .timeline-modern-item.latest .timeline-modern-icon {
+            background-color: #ffffff;
+            border-color: #FFEDD5;
+            color: #F97316;
+        }
+
+        .timeline-modern-title {
+            font-weight: 700;
+            color: #0F172A;
+            font-size: 0.87rem;
+            margin-bottom: 0.1rem;
+        }
+
+        .timeline-modern-desc {
+            color: #475569;
+            font-size: 0.78rem;
+            line-height: 1.3;
+        }
+
+        .timeline-modern-time {
+            color: #475569;
+            font-size: 0.8rem;
+            font-weight: 500;
+            white-space: nowrap;
+            margin-left: auto;
+        }
+
         .summary-jump-card {
             cursor: pointer;
             transition: border-color 0.15s ease, transform 0.15s ease;
         }
+
         .summary-jump-card:hover {
             border-color: #0D47A1 !important;
             transform: translateY(-2px);
@@ -92,173 +398,144 @@
     </style>
 </head>
 <body>
-<div layout:fragment="content">
+<div layout:fragment="content" class="tracking-page-wrapper">
     <!-- Top Tracking Search Banner -->
-    <section class="hero-ute py-4">
-        <div class="container">
-            <div class="row justify-content-center">
-                <div class="col-lg-10">
-                    <h2 class="fw-bold mb-1"><i class="bi bi-search me-2 text-warning"></i>Tra cứu hành trình vận đơn</h2>
-                    <p class="text-white-50 small mb-3">
-                        Nhập 1 hoặc tối đa 5 mã vận đơn cách nhau bởi dấu phẩy hoặc khoảng trắng để theo dõi trực tiếp theo thời gian thực.
-                    </p>
-                    <form th:action="@{/tracking}" method="get" class="card border-0 shadow p-2 p-md-3">
-                        <div class="row g-2 align-items-center">
-                            <div class="col-12 col-md">
-                                <input type="text"
-                                       name="codes"
-                                       th:value="${codes}"
-                                       class="form-control form-control-lg font-mono fs-6"
-                                       placeholder="Nhập mã vận đơn, VD: UTE261120A8K4P2, UTE261119B7M2Q9"
-                                       required>
-                            </div>
-                            <div class="col-12 col-md-auto">
-                                <button type="submit" class="btn btn-ute-orange btn-lg w-100 px-4">
-                                    <i class="bi bi-search me-1"></i>Tra cứu ngay
-                                </button>
-                            </div>
-                        </div>
-                    </form>
-                    <div class="mt-2 d-flex flex-wrap align-items-center gap-2 small">
-                        <span class="text-white-50">Gợi ý tra cứu:</span>
-                        <a th:href="@{/tracking(codes='UTE261120A8K4P2')}" class="badge bg-light bg-opacity-25 text-white text-decoration-none font-mono py-1 px-2">UTE261120A8K4P2</a>
-                        <a th:href="@{/tracking(codes='UTE261119B7M2Q9')}" class="badge bg-light bg-opacity-25 text-white text-decoration-none font-mono py-1 px-2">UTE261119B7M2Q9</a>
-                        <a th:href="@{/tracking(codes='UTE261119C3N5X1')}" class="badge bg-light bg-opacity-25 text-white text-decoration-none font-mono py-1 px-2">UTE261119C3N5X1</a>
-                        <a th:href="@{/tracking(codes='UTE261118D9P4W7')}" class="badge bg-light bg-opacity-25 text-white text-decoration-none font-mono py-1 px-2">UTE261118D9P4W7</a>
-                        <a th:href="@{/tracking(codes='UTE261120A8K4P2, UTE261119B7M2Q9, UTE261119C3N5X1')}" class="badge bg-warning text-dark text-decoration-none py-1 px-2">Tra 3 mã cùng lúc</a>
-                    </div>
-                </div>
+    <section class="hero-tracking-redesign">
+        <svg class="hero-wave-svg" viewBox="0 0 1440 280" preserveAspectRatio="none" xmlns="http://www.w3.org/2000/svg">
+            <defs>
+                <linearGradient id="trkLeftWaveGrad" x1="0%" y1="0%" x2="100%" y2="100%">
+                    <stop offset="0%" stop-color="#4791FF" stop-opacity="0.48"/>
+                    <stop offset="100%" stop-color="#1554C0" stop-opacity="0.18"/>
+                </linearGradient>
+                <linearGradient id="trkLeftBottomWaveGrad" x1="0%" y1="0%" x2="100%" y2="0%">
+                    <stop offset="0%" stop-color="#60A5FA" stop-opacity="0.52"/>
+                    <stop offset="100%" stop-color="#2563EB" stop-opacity="0.1"/>
+                </linearGradient>
+                <linearGradient id="trkRightBlueWaveGrad" x1="0%" y1="0%" x2="100%" y2="100%">
+                    <stop offset="0%" stop-color="#1E40AF" stop-opacity="0.65"/>
+                    <stop offset="100%" stop-color="#172554" stop-opacity="0.85"/>
+                </linearGradient>
+                <linearGradient id="trkRightOrangeWaveGrad" x1="0%" y1="15%" x2="100%" y2="95%">
+                    <stop offset="0%" stop-color="#FF7A18" stop-opacity="0.92"/>
+                    <stop offset="52%" stop-color="#FDBA74" stop-opacity="0.88"/>
+                    <stop offset="100%" stop-color="#FCE7F3" stop-opacity="0.92"/>
+                </linearGradient>
+            </defs>
+            <path d="M0,145 C120,135 235,190 365,235 C445,265 540,276 650,280 L0,280 Z" fill="url(#trkLeftWaveGrad)"/>
+            <path d="M0,225 C140,230 280,255 430,280 L0,280 Z" fill="url(#trkLeftBottomWaveGrad)"/>
+            <path d="M980,280 C1105,240 1215,150 1345,105 C1385,92 1415,86 1440,85 L1440,280 Z" fill="url(#trkRightBlueWaveGrad)"/>
+            <path d="M1070,280 C1175,228 1295,185 1440,170 L1440,280 Z" fill="url(#trkRightOrangeWaveGrad)"/>
+        </svg>
+
+        <div class="container hero-content-inner text-center">
+            <div class="hero-pill-badge">
+                <i class="bi bi-box-seam-fill" style="color: #F59E0B;"></i>
+                <span>Tra cứu vận đơn</span>
             </div>
+
+            <h1 class="hero-tracking-title">Theo dõi hành trình đơn hàng của bạn</h1>
+            <p class="hero-tracking-subtitle">
+                Nhập mã vận đơn để xem trạng thái và lịch sử vận chuyển chi tiết.
+            </p>
+
+            <form th:action="@{/tracking}" method="get" class="tracking-hero-bar">
+                <i class="bi bi-search text-secondary"></i>
+                <input type="text"
+                       name="codes"
+                       class="form-control border-0 bg-transparent shadow-none"
+                       placeholder="Nhập tối đa 5 mã vận đơn, cách nhau bằng dấu phẩy"
+                       required>
+                <button type="submit" class="btn btn-tracking-submit">
+                    <i class="bi bi-search me-1"></i>Tra cứu
+                </button>
+            </form>
         </div>
     </section>
 
-    <div class="container py-4">
-        <!-- Initial state before searching -->
-        <div th:if="${!hasSearched}" class="card border-0 shadow-sm text-center py-5 px-3">
-            <div class="card-body">
-                <i class="bi bi-box-seam text-primary display-3 opacity-50"></i>
-                <h4 class="fw-bold text-primary mt-3">Nhập mã vận đơn để bắt đầu tra cứu</h4>
-                <p class="text-muted mx-auto mb-4" style="max-width: 540px;">
+    <div class="container py-3">
+        <div class="tracking-result-container">
+            <!-- Initial state before searching -->
+            <div th:if="${!hasSearched}" class="tracking-result-card text-center py-5 px-3">
+                <i class="bi bi-box-seam text-primary display-4 opacity-50"></i>
+                <h5 class="fw-bold text-primary mt-3">Nhập mã vận đơn để bắt đầu tra cứu</h5>
+                <p class="text-muted mx-auto mb-3 small" style="max-width: 520px;">
                     Hỗ trợ tra cứu cùng lúc từ 1 đến 5 mã vận đơn UTEExpress. Khi nhân viên bưu cục hoặc shipper cập nhật trạng thái,
-                    hành trình sẽ tự động hiển thị mà không cần tải lại trang.
+                    hành trình sẽ tự động hiển thị trực tiếp theo thời gian thực.
                 </p>
-                <a th:href="@{/tracking(codes='UTE261120A8K4P2, UTE261119B7M2Q9')}" class="btn btn-ute-orange">
-                    <i class="bi bi-play-circle me-1"></i>Xem thử kết quả tra cứu mẫu
+                <a th:href="@{/tracking(codes='UTE261120A8K4P2')}" class="btn btn-ute-orange btn-sm px-3">
+                    <i class="bi bi-play-circle me-1"></i>Xem thử vận đơn mẫu UTE261120A8K4P2
                 </a>
             </div>
-        </div>
 
-        <!-- Search Results -->
-        <div th:if="${hasSearched and trackingResult != null}">
-            <!-- Warning Banner (> 5 codes) -->
-            <div th:if="${trackingResult.warningMessage != null}"
-                 class="alert alert-warning d-flex align-items-center shadow-sm mb-3" role="alert">
-                <i class="bi bi-exclamation-triangle-fill fs-5 me-2"></i>
-                <span th:text="${trackingResult.warningMessage}">Cảnh báo giới hạn 5 mã</span>
-            </div>
+            <!-- Search Results -->
+            <div th:if="${hasSearched and trackingResult != null}">
+                <!-- Warning Banner (> 5 codes) -->
+                <div th:if="${trackingResult.warningMessage != null}"
+                     class="alert alert-warning d-flex align-items-center shadow-sm mb-3 py-2 small" role="alert">
+                    <i class="bi bi-exclamation-triangle-fill me-2"></i>
+                    <span th:text="${trackingResult.warningMessage}">Cảnh báo giới hạn 5 mã</span>
+                </div>
 
-            <!-- Not-found Codes Alert -->
-            <div th:if="${!#lists.isEmpty(trackingResult.notFoundCodes)}"
-                 class="alert alert-danger d-flex flex-wrap align-items-center gap-2 shadow-sm mb-4" role="alert">
-                <i class="bi bi-x-circle-fill fs-5"></i>
-                <span class="fw-semibold">Không tìm thấy vận đơn với các mã:</span>
-                <span th:each="missingCode : ${trackingResult.notFoundCodes}"
-                      class="badge bg-danger-subtle text-danger border border-danger-subtle font-mono"
-                      th:text="${missingCode}">UTE000000</span>
-            </div>
+                <!-- Not-found Codes Alert -->
+                <div th:if="${!#lists.isEmpty(trackingResult.notFoundCodes)}"
+                     class="alert alert-danger d-flex flex-wrap align-items-center gap-2 shadow-sm mb-3 py-2 small" role="alert">
+                    <i class="bi bi-x-circle-fill"></i>
+                    <span class="fw-semibold">Không tìm thấy vận đơn với các mã:</span>
+                    <span th:each="missingCode : ${trackingResult.notFoundCodes}"
+                          class="badge bg-danger-subtle text-danger border border-danger-subtle font-mono"
+                          th:text="${missingCode}">UTE000000</span>
+                </div>
 
-            <!-- Empty found list -->
-            <div th:if="${#lists.isEmpty(trackingResult.shipments)}" class="card border-0 shadow-sm text-center py-5">
-                <div class="card-body">
-                    <i class="bi bi-search text-muted display-4"></i>
+                <!-- Empty found list -->
+                <div th:if="${#lists.isEmpty(trackingResult.shipments)}" class="tracking-result-card text-center py-5">
+                    <i class="bi bi-search text-muted display-5"></i>
                     <h5 class="fw-bold mt-3">Không có vận đơn nào khớp với yêu cầu</h5>
                     <p class="text-muted small mb-0">Vui lòng kiểm tra lại mã vận đơn (định dạng <code>UTE...</code>) và thử lại.</p>
                 </div>
-            </div>
 
-            <!-- Multi-code Summary Strip (when > 1 shipment found) -->
-            <div th:if="${#lists.size(trackingResult.shipments) > 1}" class="mb-4">
-                <div class="d-flex align-items-center justify-content-between mb-2">
-                    <h6 class="fw-bold text-primary mb-0">
-                        <i class="bi bi-list-ul me-1"></i>Tóm tắt <span th:text="${#lists.size(trackingResult.shipments)}">2</span> vận đơn tìm thấy (bấm để cuộn tới chi tiết)
-                    </h6>
-                </div>
-                <div class="row g-3">
-                    <div class="col-md-6 col-lg-4" th:each="item : ${trackingResult.shipments}">
-                        <a th:href="'#shipment-card-' + ${item.trackingCode}"
-                           class="card summary-jump-card text-decoration-none text-dark h-100">
-                            <div class="card-body p-3">
-                                <div class="d-flex justify-content-between align-items-start gap-2 mb-2">
-                                    <span class="tracking-code fw-bold text-primary" th:text="${item.trackingCode}">UTE261120A8K4P2</span>
-                                    <span th:id="'summary-badge-' + ${item.trackingCode}"
-                                          th:class="'badge rounded-pill ' + ${item.statusBadgeClass}"
-                                          th:text="${item.statusLabel}">Trạng thái</span>
-                                </div>
-                                <div class="small font-mono text-muted mb-1">
-                                    <span th:text="${item.originHubCode}">HCM-TD01</span>
-                                    <i class="bi bi-arrow-right mx-1 text-warning"></i>
-                                    <span th:text="${item.destHubCode}">HN-CG01</span>
-                                    <span class="ms-2 badge bg-light text-secondary border" th:text="${item.serviceName}">Nhanh</span>
-                                </div>
-                                <div class="small text-truncate text-secondary" th:text="${item.itemName}">Tên hàng</div>
+                <!-- Shipment Detail Cards -->
+                <div class="d-flex flex-column gap-3">
+                    <div class="tracking-result-card"
+                         th:each="item : ${trackingResult.shipments}"
+                         th:id="'shipment-card-' + ${item.trackingCode}"
+                         th:attr="data-tracking-code=${item.trackingCode}">
+
+                        <!-- Card Top Header -->
+                        <div class="d-flex flex-wrap justify-content-between align-items-center gap-2 pb-2 mb-2 border-bottom">
+                            <div class="d-flex align-items-center">
+                                <span class="tracking-card-code" th:text="${item.trackingCode}">UTE261120A8K4P2</span>
+                                <button type="button"
+                                        class="btn-copy-inline ms-2"
+                                        title="Sao chép mã vận đơn & link tra cứu"
+                                        th:attr="data-copy-code=${item.trackingCode},data-share-code=${item.trackingCode}"
+                                        onclick="copyTrackingCode(this); copyTrackingLink(this);">
+                                    <i class="bi bi-copy"></i>
+                                </button>
                             </div>
-                        </a>
-                    </div>
-                </div>
-            </div>
 
-            <!-- Shipment Detail Cards -->
-            <div class="d-flex flex-column gap-4">
-                <div class="card shadow-sm"
-                     th:each="item : ${trackingResult.shipments}"
-                     th:id="'shipment-card-' + ${item.trackingCode}"
-                     th:attr="data-tracking-code=${item.trackingCode}">
-
-                    <!-- Card Header -->
-                    <div class="card-header py-3 d-flex flex-wrap justify-content-between align-items-center gap-2">
-                        <div class="d-flex flex-wrap align-items-center gap-2">
-                            <span class="tracking-code fs-5 fw-bold text-primary" th:text="${item.trackingCode}">UTE261120A8K4P2</span>
-                            <button type="button" class="btn btn-outline-secondary btn-sm py-0 px-2"
-                                    title="Sao chép mã vận đơn"
-                                    th:attr="data-copy-code=${item.trackingCode}"
-                                    onclick="copyTrackingCode(this)">
-                                <i class="bi bi-clipboard"></i>
-                            </button>
-                            <button type="button" class="btn btn-outline-primary btn-sm py-0 px-2"
-                                    title="Sao chép đường dẫn tra cứu để chia sẻ"
-                                    th:attr="data-share-code=${item.trackingCode}"
-                                    onclick="copyTrackingLink(this)">
-                                <i class="bi bi-share me-1"></i><span class="small">Chia sẻ link</span>
-                            </button>
-                            <span class="badge bg-primary-subtle text-primary" th:text="${item.serviceName}">Nhanh</span>
-                            <span th:if="${item.fragile}" class="badge bg-warning-subtle text-warning-emphasis border border-warning">
-                                <i class="bi bi-exclamation-diamond-fill me-1"></i>Hàng dễ vỡ
-                            </span>
+                            <div class="d-flex align-items-center gap-2">
+                                <span class="live-status-pill">
+                                    <span class="live-dot"></span>
+                                    <span>Đang cập nhật trực tiếp</span>
+                                </span>
+                                <span th:id="'status-badge-' + ${item.trackingCode}"
+                                      class="d-none"
+                                      th:text="${item.statusLabel}">Chờ lấy hàng</span>
+                            </div>
                         </div>
-                        <div class="d-flex flex-wrap align-items-center gap-2">
-                            <span class="badge bg-success-subtle text-success border border-success-subtle px-2 py-2 d-inline-flex align-items-center gap-1">
-                                <span class="live-dot"></span>
-                                <span>Đang cập nhật trực tiếp</span>
-                            </span>
-                            <span th:id="'status-badge-' + ${item.trackingCode}"
-                                  th:class="'badge rounded-pill px-3 py-2 ' + ${item.statusBadgeClass}"
-                                  th:text="${item.statusLabel}">Chờ lấy hàng</span>
-                        </div>
-                    </div>
 
-                    <div class="card-body p-4">
                         <!-- 5-Step Progress Stepper -->
                         <div th:if="${item.progressStep > 0}"
                              th:id="'stepper-' + ${item.trackingCode}"
-                             class="ute-stepper mb-4 py-2">
+                             class="ute-stepper mb-3">
                             <div class="ute-step" data-step="1"
                                  th:classappend="${item.progressStep == 1} ? 'current' : (${item.progressStep > 1} ? 'completed' : '')">
-                                <div class="ute-step-circle"><i class="bi bi-file-earmark-check"></i></div>
+                                <div class="ute-step-circle"><i class="bi bi-file-earmark-text"></i></div>
                                 <div class="ute-step-label">Đã tạo</div>
                             </div>
                             <div class="ute-step" data-step="2"
                                  th:classappend="${item.progressStep == 2} ? 'current' : (${item.progressStep > 2} ? 'completed' : '')">
-                                <div class="ute-step-circle"><i class="bi bi-box-arrow-in-up"></i></div>
+                                <div class="ute-step-circle"><i class="bi bi-box-seam"></i></div>
                                 <div class="ute-step-label">Đã lấy</div>
                             </div>
                             <div class="ute-step" data-step="3"
@@ -281,120 +558,108 @@
                         <!-- Cancelled / Returning Notice -->
                         <div th:if="${item.progressStep == 0}"
                              th:id="'stepper-cancelled-' + ${item.trackingCode}"
-                             class="alert alert-secondary d-flex align-items-center mb-4">
-                            <i class="bi bi-info-circle-fill me-2 fs-5"></i>
+                             class="alert alert-secondary d-flex align-items-center mb-3 py-2 small">
+                            <i class="bi bi-info-circle-fill me-2"></i>
                             <div>
                                 Vận đơn hiện đang ở trạng thái <strong th:text="${item.statusLabel}">Đã hủy</strong>.
                             </div>
                         </div>
 
-                        <!-- Route Banner -->
-                        <div class="bg-light border rounded-3 p-3 mb-4">
-                            <div class="row align-items-center g-3">
-                                <div class="col-md-8">
-                                    <div class="small text-muted mb-1">Tuyến định tuyến Chuỗi Bưu cục</div>
-                                    <div class="d-flex flex-wrap align-items-center gap-2">
-                                        <div>
-                                            <span class="badge bg-primary font-mono fs-6" th:text="${item.originHubCode}">HCM-TD01</span>
-                                            <span class="small fw-semibold ms-1" th:text="${item.originHubName}">Bưu cục Thủ Đức</span>
-                                        </div>
-                                        <i class="bi bi-arrow-right-circle-fill text-warning fs-5"></i>
-                                        <div>
-                                            <span class="badge bg-primary font-mono fs-6" th:text="${item.destHubCode}">HN-CG01</span>
-                                            <span class="small fw-semibold ms-1" th:text="${item.destHubName}">Bưu cục Cầu Giấy</span>
-                                        </div>
-                                    </div>
-                                </div>
-                                <div class="col-md-4 text-md-end">
-                                    <div class="small text-muted mb-1">Vị trí hiện tại</div>
-                                    <div class="fw-semibold text-primary">
-                                        <i class="bi bi-geo-alt-fill text-warning me-1"></i>
-                                        <span th:id="'current-hub-' + ${item.trackingCode}"
-                                              th:text="${item.currentHubName != null ? item.currentHubName : 'Đang cập nhật'}">Bưu cục Thủ Đức (HCM-TD01)</span>
-                                    </div>
-                                </div>
-                            </div>
-                        </div>
+                        <!-- 4-Column Horizontal Meta Info Strip (BR-11 Compliant: NO COD, NO POD, NO street address, masked phones kept hidden for audit) -->
+                        <div class="tracking-meta-strip">
+                            <span class="d-none" th:text="${item.maskedSenderPhone}">090****567</span>
+                            <span class="d-none" th:text="${item.maskedReceiverPhone}">098****321</span>
+                            <span class="d-none" th:id="'current-hub-' + ${item.trackingCode}" th:text="${item.currentHubName}"></span>
 
-                        <!-- Masked Info Grid (BR-11 Compliant: NO COD, NO POD, NO street address) -->
-                        <div class="row g-3 mb-4">
-                            <div class="col-md-4">
-                                <div class="border rounded-3 p-3 h-100">
-                                    <div class="small text-uppercase text-muted fw-semibold mb-2">
-                                        <i class="bi bi-send text-primary me-1"></i>Người gửi (đã ẩn một phần)
-                                    </div>
-                                    <div class="fw-semibold" th:text="${item.maskedSenderName}">Shop Hoàng Nam ***</div>
-                                    <div class="small font-mono text-secondary mt-1">
-                                        <i class="bi bi-telephone me-1"></i><span th:text="${item.maskedSenderPhone}">090****567</span>
-                                    </div>
-                                    <div class="small text-muted mt-1">
-                                        <i class="bi bi-geo-alt me-1"></i><span th:text="${item.senderRegion}">TP. Thủ Đức, TP. Hồ Chí Minh</span>
-                                    </div>
-                                </div>
-                            </div>
-                            <div class="col-md-4">
-                                <div class="border rounded-3 p-3 h-100">
-                                    <div class="small text-uppercase text-muted fw-semibold mb-2">
-                                        <i class="bi bi-person-check text-warning me-1"></i>Người nhận (đã ẩn một phần)
-                                    </div>
-                                    <div class="fw-semibold" th:text="${item.maskedReceiverName}">Trần Minh ***</div>
-                                    <div class="small font-mono text-secondary mt-1">
-                                        <i class="bi bi-telephone me-1"></i><span th:text="${item.maskedReceiverPhone}">098****321</span>
-                                    </div>
-                                    <div class="small text-muted mt-1">
-                                        <i class="bi bi-geo-alt me-1"></i><span th:text="${item.receiverRegion}">Quận Cầu Giấy, Hà Nội</span>
+                            <div class="row g-3 align-items-center">
+                                <!-- Col 1: Người gửi -->
+                                <div class="col-6 col-lg-3">
+                                    <div class="d-flex align-items-center gap-2">
+                                        <div class="meta-icon-circle meta-icon-blue">
+                                            <i class="bi bi-person"></i>
+                                        </div>
+                                        <div>
+                                            <div class="meta-label">Người gửi</div>
+                                            <div class="meta-value"
+                                                 th:text="${#strings.replace(item.maskedSenderName, ' ***', '')}">Shop Hoàng Nam</div>
+                                        </div>
+                                        <i class="bi bi-arrow-right text-primary ms-auto me-lg-2 d-none d-lg-inline-block"></i>
                                     </div>
                                 </div>
-                            </div>
-                            <div class="col-md-4">
-                                <div class="border rounded-3 p-3 h-100">
-                                    <div class="small text-uppercase text-muted fw-semibold mb-2">
-                                        <i class="bi bi-box2 text-success me-1"></i>Thông tin kiện hàng
-                                    </div>
-                                    <div class="fw-semibold" th:text="${item.itemName}">Tai nghe Bluetooth</div>
-                                    <div class="small text-secondary mt-1">
-                                        Trọng lượng tính cước:
-                                        <strong class="font-mono" th:text="${item.chargeableWeightKg + ' kg'}">2.00 kg</strong>
-                                    </div>
-                                    <div class="small text-muted mt-1">
-                                        Tạo lúc:
-                                        <span class="font-mono"
-                                              th:text="${item.createdAt != null ? #temporals.format(item.createdAt, 'dd/MM/yyyy HH:mm') : '—'}">20/11/2026 09:30</span>
-                                    </div>
-                                </div>
-                            </div>
-                        </div>
 
-                        <!-- Privacy Notice -->
-                        <div class="small text-muted bg-light rounded px-3 py-2 mb-4 d-flex align-items-center gap-2">
-                            <i class="bi bi-shield-check text-primary"></i>
-                            <span>
-                                Theo chính sách bảo mật UTEExpress, địa chỉ chi tiết, số điện thoại đầy đủ, số tiền thu hộ (COD) và ảnh chứng từ (POD)
-                                chỉ hiển thị cho chủ vận đơn sau khi <a th:href="@{/auth/login}" class="text-decoration-none fw-semibold">đăng nhập</a>.
-                            </span>
+                                <!-- Col 2: Người nhận -->
+                                <div class="col-6 col-lg-2">
+                                    <div class="d-flex align-items-center gap-2">
+                                        <div class="meta-icon-circle meta-icon-blue">
+                                            <i class="bi bi-person"></i>
+                                        </div>
+                                        <div>
+                                            <div class="meta-label">Người nhận</div>
+                                            <div class="meta-value"
+                                                 th:text="${#strings.replace(item.maskedReceiverName, ' ***', '')}">Trần Minh</div>
+                                        </div>
+                                    </div>
+                                </div>
+
+                                <!-- Col 3: Tuyến vận chuyển -->
+                                <div class="col-6 col-lg-4">
+                                    <div class="d-flex align-items-center gap-2">
+                                        <div class="meta-icon-circle meta-icon-blue">
+                                            <i class="bi bi-geo-alt"></i>
+                                        </div>
+                                        <div>
+                                            <div class="meta-label">Tuyến vận chuyển</div>
+                                            <div class="meta-value">
+                                                <span th:text="${item.senderRegion != null and item.senderRegion.contains(',') ? #strings.trim(#strings.substringAfter(item.senderRegion, ',')) : item.senderRegion}">TP. Hồ Chí Minh</span>
+                                                <i class="bi bi-arrow-right mx-1 text-secondary"></i>
+                                                <span th:text="${item.receiverRegion != null and item.receiverRegion.contains(',') ? #strings.trim(#strings.substringAfter(item.receiverRegion, ',')) : item.receiverRegion}">Hà Nội</span>
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
+
+                                <!-- Col 4: Hàng hóa -->
+                                <div class="col-6 col-lg-3 border-start-lg ps-lg-3">
+                                    <div class="d-flex align-items-center gap-2">
+                                        <div class="meta-icon-circle meta-icon-orange">
+                                            <i class="bi bi-box-seam"></i>
+                                        </div>
+                                        <div>
+                                            <div class="meta-label">Hàng hóa</div>
+                                            <div class="meta-value"
+                                                 th:text="${item.itemName + ' (' + item.chargeableWeightKg + ' kg)'}">Tai nghe Bluetooth (2.00 kg)</div>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
                         </div>
 
                         <!-- Vertical Realtime Timeline -->
-                        <h6 class="fw-bold text-primary mb-3">
-                            <i class="bi bi-clock-history me-1"></i>Lịch sử hành trình chi tiết
-                        </h6>
-                        <ul class="tracking-timeline mb-0" th:id="'timeline-' + ${item.trackingCode}">
-                            <li class="tracking-timeline-item p-2 rounded" th:each="log : ${item.logs}">
-                                <div class="d-flex w-100 justify-content-between align-items-center flex-wrap gap-1">
-                                    <div class="fw-bold text-primary" th:text="${log.title}">Tiêu đề mốc hành trình</div>
-                                    <small class="text-muted font-mono"
-                                           th:text="${log.createdAt != null ? #temporals.format(log.createdAt, 'dd/MM/yyyy HH:mm') : ''}">20/11/2026 09:30</small>
-                                </div>
-                                <div class="small text-secondary mt-1"
-                                     th:if="${log.description != null and !#strings.isEmpty(log.description)}"
-                                     th:text="${log.description}">Mô tả chi tiết</div>
-                                <div class="small text-muted mt-1"
-                                     th:if="${log.hubName != null and !#strings.isEmpty(log.hubName)}">
-                                    <i class="bi bi-geo-alt-fill text-warning me-1"></i>
-                                    <span th:text="${log.hubName}">Bưu cục Thủ Đức (HCM-TD01)</span>
+                        <div class="d-flex align-items-center gap-2 mb-2">
+                            <i class="bi bi-clock text-primary" style="font-size: 1.02rem;"></i>
+                            <h6 class="fw-bold mb-0" style="color: #163B88; font-size: 0.98rem;">Lịch sử hành trình</h6>
+                        </div>
+
+                        <ul class="timeline-modern" th:id="'timeline-' + ${item.trackingCode}">
+                            <li class="timeline-modern-item"
+                                th:each="log, iterStat : ${item.logs}"
+                                th:classappend="${iterStat.first} ? 'latest' : ''">
+                                <span class="timeline-modern-dot"></span>
+                                <div class="timeline-modern-card">
+                                    <div class="timeline-modern-icon">
+                                        <i th:class="${iterStat.first} ? 'bi bi-truck' : 'bi bi-file-earmark-text'"></i>
+                                    </div>
+                                    <div class="flex-grow-1">
+                                        <div class="timeline-modern-title" th:text="${log.title}">Chờ nhân viên lấy hàng</div>
+                                        <div class="timeline-modern-desc"
+                                             th:if="${log.description != null and !#strings.isEmpty(log.description)}"
+                                             th:text="${log.description}">Đơn hàng đã được tạo và đang chờ nhân viên UTEExpress đến lấy hàng.</div>
+                                    </div>
+                                    <div class="timeline-modern-time"
+                                         th:text="${log.createdAt != null ? #temporals.format(log.createdAt, 'HH:mm - dd/MM/yyyy') : ''}">10:24 - 24/01/2025</div>
                                 </div>
                             </li>
-                            <li th:if="${#lists.isEmpty(item.logs)}" class="tracking-timeline-item p-2 rounded text-muted small">
+                            <li th:if="${#lists.isEmpty(item.logs)}" class="text-muted small py-2">
                                 Chưa có nhật ký hành trình chi tiết.
                             </li>
                         </ul>
@@ -416,7 +681,7 @@
                 if (icon) {
                     icon.className = 'bi bi-check-lg text-success';
                     setTimeout(function () {
-                        icon.className = 'bi bi-clipboard';
+                        icon.className = 'bi bi-copy';
                     }, 1500);
                 }
             }).catch(function () {});
@@ -426,16 +691,7 @@
             const code = btn.getAttribute('data-share-code');
             if (!code || !navigator.clipboard) return;
             const shareUrl = window.location.origin + '/tracking?codes=' + encodeURIComponent(code);
-            navigator.clipboard.writeText(shareUrl).then(function () {
-                const label = btn.querySelector('span');
-                const icon = btn.querySelector('i');
-                if (icon) icon.className = 'bi bi-check-lg text-success me-1';
-                if (label) label.textContent = 'Đã chép link!';
-                setTimeout(function () {
-                    if (icon) icon.className = 'bi bi-share me-1';
-                    if (label) label.textContent = 'Chia sẻ link';
-                }, 1800);
-            }).catch(function () {});
+            navigator.clipboard.writeText(shareUrl).catch(function () {});
         }
 
         (function () {
@@ -471,12 +727,6 @@
                             }
                         });
                     }
-                }
-                const summaryBadge = document.getElementById('summary-badge-' + code);
-                const mainBadge = document.getElementById('status-badge-' + code);
-                if (summaryBadge && mainBadge) {
-                    summaryBadge.className = mainBadge.className.replace('px-3 py-2', '');
-                    summaryBadge.textContent = mainBadge.textContent;
                 }
             }
 

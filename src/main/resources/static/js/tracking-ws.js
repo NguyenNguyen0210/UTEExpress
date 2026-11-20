@@ -70,8 +70,8 @@
         const d = new Date(raw);
         if (isNaN(d.getTime())) return String(raw);
         const pad = function (n) { return n < 10 ? '0' + n : String(n); };
-        return pad(d.getDate()) + '/' + pad(d.getMonth() + 1) + '/' + d.getFullYear()
-            + ' ' + pad(d.getHours()) + ':' + pad(d.getMinutes());
+        return pad(d.getHours()) + ':' + pad(d.getMinutes()) + ' - '
+            + pad(d.getDate()) + '/' + pad(d.getMonth() + 1) + '/' + d.getFullYear();
     }
 
     function updateTimelineDom(code, payload) {
@@ -81,17 +81,25 @@
 
         const title = escapeHtml(payload.logTitle || payload.statusLabel || payload.status || 'Cập nhật trạng thái');
         const description = escapeHtml(payload.logDescription || payload.description || '');
-        const hubName = escapeHtml(payload.currentHubName || payload.location || '');
         const timestamp = escapeHtml(formatTimestamp(payload.timestamp || payload.createdAt));
 
+        timelineEl.querySelectorAll('.timeline-modern-item.latest').forEach(function (item) {
+            item.classList.remove('latest');
+        });
+
         const itemHtml = `
-            <li class="tracking-timeline-item timeline-flash p-2 rounded">
-                <div class="d-flex w-100 justify-content-between align-items-center">
-                    <div class="fw-bold text-primary">${title}</div>
-                    <small class="text-muted font-mono">${timestamp}</small>
+            <li class="timeline-modern-item latest timeline-flash">
+                <span class="timeline-modern-dot"></span>
+                <div class="timeline-modern-card">
+                    <div class="timeline-modern-icon">
+                        <i class="bi bi-truck"></i>
+                    </div>
+                    <div class="flex-grow-1">
+                        <div class="timeline-modern-title">${title}</div>
+                        ${description ? `<div class="timeline-modern-desc">${description}</div>` : ''}
+                    </div>
+                    <div class="timeline-modern-time">${timestamp}</div>
                 </div>
-                ${description ? `<div class="small text-secondary mt-1">${description}</div>` : ''}
-                ${hubName ? `<div class="small text-muted mt-1"><i class="bi bi-geo-alt-fill text-warning me-1"></i>${hubName}</div>` : ''}
             </li>
         `;
 

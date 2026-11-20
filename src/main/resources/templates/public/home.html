@@ -1,0 +1,270 @@
+<!DOCTYPE html>
+<html lang="vi"
+      xmlns:th="http://www.thymeleaf.org"
+      xmlns:layout="http://www.ultraq.net.nz/thymeleaf/layout"
+      xmlns:sec="http://www.thymeleaf.org/extras/spring-security"
+      layout:decorate="~{layout/base-public}">
+<head>
+    <title>Trang chủ</title>
+    <style>
+        .demo-chip {
+            background: rgba(255, 255, 255, 0.14);
+            border: 1px solid rgba(255, 255, 255, 0.28);
+            color: #ffffff;
+            transition: all 0.15s ease;
+        }
+        .demo-chip:hover {
+            background: #F97316;
+            border-color: #F97316;
+            color: #ffffff;
+        }
+        .service-card {
+            transition: transform 0.2s ease, box-shadow 0.2s ease;
+        }
+        .service-card:hover {
+            transform: translateY(-4px);
+            box-shadow: 0 12px 24px rgba(13, 71, 161, 0.1);
+        }
+        .service-card-featured {
+            border: 2px solid #F97316 !important;
+        }
+    </style>
+</head>
+<body>
+<div layout:fragment="content">
+    <!-- Hero Section -->
+    <section class="hero-ute">
+        <div class="container py-2 py-lg-4">
+            <div class="row justify-content-center text-center">
+                <div class="col-lg-10 col-xl-9">
+                    <span class="badge bg-warning text-dark fw-semibold px-3 py-2 rounded-pill mb-3">
+                        <i class="bi bi-lightning-charge-fill me-1"></i>Chuỗi Giao nhận Logistic Đa Bưu cục • Realtime Tracking
+                    </span>
+                    <h1 class="display-5 fw-bold mb-3">
+                        Giao nhận siêu tốc, minh bạch từng chặng cùng <span class="text-warning">UTEExpress</span>
+                    </h1>
+                    <p class="lead text-white-50 mb-4">
+                        Tra cứu trực tiếp hành trình đơn hàng theo thời gian thực qua WebSocket, ước tính cước tức thì
+                        và kết nối mạng lưới bưu cục phủ sóng các tỉnh thành trọng điểm.
+                    </p>
+
+                    <!-- Multi-code Tracking Search Box -->
+                    <div class="card border-0 shadow-lg text-start p-3 p-md-4 bg-white">
+                        <form th:action="@{/tracking}" method="get" class="row g-2 align-items-center">
+                            <div class="col-12 col-md">
+                                <label for="heroTrackingInput" class="form-label small fw-semibold text-primary mb-1">
+                                    <i class="bi bi-upc-scan me-1"></i>Tra cứu vận đơn (hỗ trợ tối đa 5 mã cùng lúc)
+                                </label>
+                                <div class="input-group input-group-lg">
+                                    <span class="input-group-text bg-light border-end-0 text-primary">
+                                        <i class="bi bi-search"></i>
+                                    </span>
+                                    <input type="text"
+                                           id="heroTrackingInput"
+                                           name="codes"
+                                           class="form-control border-start-0 font-mono fs-6"
+                                           placeholder="VD: UTE261120A8K4P2, UTE261119B7M2Q9"
+                                           required>
+                                </div>
+                            </div>
+                            <div class="col-12 col-md-auto align-self-end">
+                                <button type="submit" class="btn btn-ute-orange btn-lg w-100 px-4 py-2" style="height: 48px;">
+                                    <i class="bi bi-search me-1"></i>Tra cứu ngay
+                                </button>
+                            </div>
+                        </form>
+                        <div class="mt-2 small text-muted d-flex flex-wrap align-items-center gap-2">
+                            <span><i class="bi bi-shield-lock text-primary me-1"></i>Thông tin cá nhân, COD &amp; chứng từ POD được bảo mật trên cổng công khai.</span>
+                        </div>
+                    </div>
+
+                    <!-- Clickable Sample Demo Tracking Codes -->
+                    <div class="mt-3 d-flex flex-wrap justify-content-center align-items-center gap-2 small">
+                        <span class="text-white-50 fw-medium"><i class="bi bi-stars me-1 text-warning"></i>Tra cứu nhanh mẫu demo:</span>
+                        <a th:href="@{/tracking(codes='UTE261120A8K4P2')}" class="btn btn-sm rounded-pill demo-chip font-mono">
+                            UTE261120A8K4P2
+                        </a>
+                        <a th:href="@{/tracking(codes='UTE261119B7M2Q9')}" class="btn btn-sm rounded-pill demo-chip font-mono">
+                            UTE261119B7M2Q9
+                        </a>
+                        <a th:href="@{/tracking(codes='UTE261119C3N5X1')}" class="btn btn-sm rounded-pill demo-chip font-mono">
+                            UTE261119C3N5X1
+                        </a>
+                        <a th:href="@{/tracking(codes='UTE261118D9P4W7')}" class="btn btn-sm rounded-pill demo-chip font-mono">
+                            UTE261118D9P4W7
+                        </a>
+                        <a th:href="@{/tracking(codes='UTE261120A8K4P2, UTE261119B7M2Q9, UTE261119C3N5X1')}"
+                           class="btn btn-sm rounded-pill btn-warning text-dark fw-semibold">
+                            <i class="bi bi-layers me-1"></i>Thử tra 3 mã cùng lúc
+                        </a>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Key Metrics Strip -->
+            <div class="row g-3 mt-4 pt-3 border-top border-light border-opacity-25 text-center">
+                <div class="col-6 col-md-3">
+                    <div class="fs-3 fw-bold text-warning font-mono" th:text="${hubCount} + '+'">6+</div>
+                    <div class="small text-white-50">Bưu cục &amp; Kho trung chuyển</div>
+                </div>
+                <div class="col-6 col-md-3">
+                    <div class="fs-3 fw-bold text-warning font-mono" th:text="${provinceCount} + ' tỉnh/TP'">5 tỉnh/TP</div>
+                    <div class="small text-white-50">Kết nối liên vùng toàn quốc</div>
+                </div>
+                <div class="col-6 col-md-3">
+                    <div class="fs-3 fw-bold text-warning font-mono">&lt; 2 giây</div>
+                    <div class="small text-white-50">Cập nhật hành trình Realtime</div>
+                </div>
+                <div class="col-6 col-md-3">
+                    <div class="fs-3 fw-bold text-warning font-mono">100% POD</div>
+                    <div class="small text-white-50">Ảnh chứng từ &amp; Đối soát COD</div>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- Service Types Section -->
+    <section class="container py-5">
+        <div class="text-center mb-4">
+            <span class="badge bg-primary-subtle text-primary px-3 py-2 rounded-pill mb-2">BẢNG GIÁ DỊCH VỤ</span>
+            <h2 class="fw-bold text-primary">Gói dịch vụ vận chuyển linh hoạt</h2>
+            <p class="text-muted mb-0">Cước phí minh bạch, tự động quy đổi trọng lượng &amp; định tuyến bưu cục tối ưu</p>
+        </div>
+
+        <div class="row g-4 justify-content-center">
+            <div class="col-md-6 col-lg-4" th:each="svc : ${serviceTypes}">
+                <div class="card h-100 service-card"
+                     th:classappend="${svc.code == 'EXPRESS'} ? 'service-card-featured' : ''">
+                    <div class="card-body p-4 d-flex flex-column">
+                        <div class="d-flex justify-content-between align-items-center mb-3">
+                            <span class="badge bg-primary-subtle text-primary font-mono px-2 py-1" th:text="${svc.code}">STANDARD</span>
+                            <span th:if="${svc.code == 'EXPRESS'}" class="badge bg-warning text-dark">
+                                <i class="bi bi-fire me-1"></i>Phổ biến nhất
+                            </span>
+                            <span th:if="${svc.code == 'SAMEDAY'}" class="badge bg-danger-subtle text-danger">
+                                <i class="bi bi-lightning-fill me-1"></i>Ưu tiên cao
+                            </span>
+                        </div>
+
+                        <h4 class="fw-bold mb-1" th:text="${svc.name}">Tiêu chuẩn</h4>
+                        <p class="text-muted small mb-3" th:text="${svc.description}">Mô tả gói dịch vụ</p>
+
+                        <div class="bg-light rounded p-3 mb-3">
+                            <div class="small text-muted">Cước cơ bản (≤ <span th:text="${svc.baseWeightKg}">1.00</span> kg)</div>
+                            <div class="fs-3 fw-bold money-mono" style="color: #F97316;"
+                                 th:text="${#numbers.formatDecimal(svc.baseFee, 0, 'POINT', 0, 'COMMA') + ' đ'}">20.000 đ</div>
+                        </div>
+
+                        <ul class="list-unstyled small text-secondary d-flex flex-column gap-2 mb-4 flex-grow-1">
+                            <li>
+                                <i class="bi bi-clock-history text-primary me-2"></i>
+                                Thời gian dự kiến:
+                                <strong class="text-dark"
+                                        th:text="${svc.estimatedDaysMin == 0} ? ('Trong ngày - ' + ${svc.estimatedDaysMax} + ' ngày') : (${svc.estimatedDaysMin} + ' - ' + ${svc.estimatedDaysMax} + ' ngày')">
+                                    3 - 5 ngày
+                                </strong>
+                            </li>
+                            <li>
+                                <i class="bi bi-plus-circle text-primary me-2"></i>
+                                Vượt mức (/0.5kg):
+                                <strong class="text-dark font-mono"
+                                        th:text="${'+' + #numbers.formatDecimal(svc.extraFeePerHalfKg, 0, 'POINT', 0, 'COMMA') + ' đ'}">+5.000 đ</strong>
+                            </li>
+                            <li>
+                                <i class="bi bi-signpost-split text-primary me-2"></i>
+                                Phụ phí liên tỉnh:
+                                <strong class="text-dark font-mono"
+                                        th:text="${'+' + #numbers.formatDecimal(svc.interProvinceSurcharge, 0, 'POINT', 0, 'COMMA') + ' đ'}">+10.000 đ</strong>
+                            </li>
+                            <li>
+                                <i class="bi bi-cash-coin text-primary me-2"></i>
+                                Phí thu hộ COD:
+                                <strong class="text-dark font-mono" th:text="${svc.codFeePercent + '%'}">1.00%</strong>
+                            </li>
+                        </ul>
+
+                        <div class="d-grid gap-2">
+                            <a th:href="@{/estimate}" class="btn btn-outline-primary btn-sm">
+                                <i class="bi bi-calculator me-1"></i>Ước tính cước gói này
+                            </a>
+                            <a th:href="@{/customer/shipments/new(serviceTypeId=${svc.id})}"
+                               class="btn btn-sm"
+                               th:classappend="${svc.code == 'EXPRESS'} ? 'btn-ute-orange' : 'btn-ute-navy'">
+                                <i class="bi bi-box-seam me-1"></i>Tạo đơn với gói này
+                            </a>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- Quick Utility Links Section -->
+    <section class="container pb-5">
+        <div class="row g-4">
+            <div class="col-md-4">
+                <div class="card h-100 border-0 shadow-sm">
+                    <div class="card-body p-4 d-flex flex-column">
+                        <div class="rounded-3 bg-primary-subtle text-primary d-inline-flex align-items-center justify-content-center mb-3"
+                             style="width: 48px; height: 48px;">
+                            <i class="bi bi-calculator fs-4"></i>
+                        </div>
+                        <h5 class="fw-bold">Ước tính cước tức thì</h5>
+                        <p class="text-muted small flex-grow-1">
+                            So sánh cước phí giữa tất cả gói dịch vụ theo tỉnh gửi/nhận, trọng lượng thực,
+                            trọng lượng quy đổi kích thước (D×R×C / 5000) và tiền thu hộ COD.
+                        </p>
+                        <a th:href="@{/estimate}" class="btn btn-outline-primary btn-sm align-self-start">
+                            Mở công cụ tính cước <i class="bi bi-arrow-right ms-1"></i>
+                        </a>
+                    </div>
+                </div>
+            </div>
+
+            <div class="col-md-4">
+                <div class="card h-100 border-0 shadow-sm">
+                    <div class="card-body p-4 d-flex flex-column">
+                        <div class="rounded-3 bg-warning-subtle text-warning-emphasis d-inline-flex align-items-center justify-content-center mb-3"
+                             style="width: 48px; height: 48px;">
+                            <i class="bi bi-buildings fs-4"></i>
+                        </div>
+                        <h5 class="fw-bold">Mạng lưới Chuỗi Bưu cục</h5>
+                        <p class="text-muted small flex-grow-1">
+                            Tra cứu nhanh <strong th:text="${hubCount}">6</strong> bưu cục giao dịch và kho trung chuyển vùng
+                            trên toàn quốc kèm mã định tuyến, địa chỉ chi tiết và hotline.
+                        </p>
+                        <a th:href="@{/hubs}" class="btn btn-outline-primary btn-sm align-self-start">
+                            Xem danh sách bưu cục <i class="bi bi-arrow-right ms-1"></i>
+                        </a>
+                    </div>
+                </div>
+            </div>
+
+            <div class="col-md-4">
+                <div class="card h-100 border-0 shadow-sm">
+                    <div class="card-body p-4 d-flex flex-column">
+                        <div class="rounded-3 bg-success-subtle text-success d-inline-flex align-items-center justify-content-center mb-3"
+                             style="width: 48px; height: 48px;">
+                            <i class="bi bi-shop-window fs-4"></i>
+                        </div>
+                        <h5 class="fw-bold">Cổng Khách hàng &amp; Chủ Shop</h5>
+                        <p class="text-muted small flex-grow-1">
+                            Tạo đơn 2 cột tiện lợi, thanh toán online VNPay Sandbox, xuất tem vận đơn PDF khổ A6 có
+                            Barcode/QR, chat CSKH trực tiếp và đối soát COD minh bạch.
+                        </p>
+                        <div class="d-flex gap-2">
+                            <a sec:authorize="isAnonymous()" th:href="@{/auth/register}" class="btn btn-ute-orange btn-sm">
+                                Đăng ký ngay <i class="bi bi-arrow-right ms-1"></i>
+                            </a>
+                            <a sec:authorize="isAuthenticated()" th:href="@{/customer/shipments/new}" class="btn btn-ute-orange btn-sm">
+                                Tạo vận đơn mới <i class="bi bi-arrow-right ms-1"></i>
+                            </a>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </section>
+</div>
+</body>
+</html>

@@ -1,0 +1,475 @@
+<!DOCTYPE html>
+<html lang="vi"
+      xmlns:th="http://www.thymeleaf.org"
+      xmlns:layout="http://www.ultraq.net.nz/thymeleaf/layout"
+      layout:decorate="~{layout/base-public}">
+<head>
+    <title>Tra cứu vận đơn</title>
+    <style>
+        .live-dot {
+            display: inline-block;
+            width: 8px;
+            height: 8px;
+            border-radius: 50%;
+            background-color: #16A34A;
+            animation: livePulse 1.6s infinite;
+        }
+        @keyframes livePulse {
+            0% { box-shadow: 0 0 0 0 rgba(22, 163, 74, 0.7); }
+            70% { box-shadow: 0 0 0 6px rgba(22, 163, 74, 0); }
+            100% { box-shadow: 0 0 0 0 rgba(22, 163, 74, 0); }
+        }
+        .ute-stepper {
+            display: flex;
+            align-items: flex-start;
+            justify-content: space-between;
+            position: relative;
+            gap: 0.25rem;
+        }
+        .ute-stepper::before {
+            content: '';
+            position: absolute;
+            top: 18px;
+            left: 8%;
+            right: 8%;
+            height: 3px;
+            background-color: #E2E8F0;
+            z-index: 0;
+        }
+        .ute-step {
+            position: relative;
+            z-index: 1;
+            flex: 1;
+            text-align: center;
+        }
+        .ute-step-circle {
+            width: 36px;
+            height: 36px;
+            border-radius: 50%;
+            background-color: #FFFFFF;
+            border: 2px solid #CBD5E1;
+            color: #94A3B8;
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 0.95rem;
+            font-weight: 600;
+            transition: all 0.25s ease;
+        }
+        .ute-step.completed .ute-step-circle {
+            background-color: #0D47A1;
+            border-color: #0D47A1;
+            color: #FFFFFF;
+        }
+        .ute-step.current .ute-step-circle {
+            background-color: #F97316;
+            border-color: #F97316;
+            color: #FFFFFF;
+            box-shadow: 0 0 0 4px rgba(249, 115, 22, 0.22);
+        }
+        .ute-step-label {
+            font-size: 0.78rem;
+            margin-top: 0.45rem;
+            color: #64748B;
+            font-weight: 500;
+        }
+        .ute-step.completed .ute-step-label {
+            color: #0D47A1;
+            font-weight: 600;
+        }
+        .ute-step.current .ute-step-label {
+            color: #EA580C;
+            font-weight: 700;
+        }
+        .summary-jump-card {
+            cursor: pointer;
+            transition: border-color 0.15s ease, transform 0.15s ease;
+        }
+        .summary-jump-card:hover {
+            border-color: #0D47A1 !important;
+            transform: translateY(-2px);
+        }
+    </style>
+</head>
+<body>
+<div layout:fragment="content">
+    <!-- Top Tracking Search Banner -->
+    <section class="hero-ute py-4">
+        <div class="container">
+            <div class="row justify-content-center">
+                <div class="col-lg-10">
+                    <h2 class="fw-bold mb-1"><i class="bi bi-search me-2 text-warning"></i>Tra cứu hành trình vận đơn</h2>
+                    <p class="text-white-50 small mb-3">
+                        Nhập 1 hoặc tối đa 5 mã vận đơn cách nhau bởi dấu phẩy hoặc khoảng trắng để theo dõi trực tiếp theo thời gian thực.
+                    </p>
+                    <form th:action="@{/tracking}" method="get" class="card border-0 shadow p-2 p-md-3">
+                        <div class="row g-2 align-items-center">
+                            <div class="col-12 col-md">
+                                <input type="text"
+                                       name="codes"
+                                       th:value="${codes}"
+                                       class="form-control form-control-lg font-mono fs-6"
+                                       placeholder="Nhập mã vận đơn, VD: UTE261120A8K4P2, UTE261119B7M2Q9"
+                                       required>
+                            </div>
+                            <div class="col-12 col-md-auto">
+                                <button type="submit" class="btn btn-ute-orange btn-lg w-100 px-4">
+                                    <i class="bi bi-search me-1"></i>Tra cứu ngay
+                                </button>
+                            </div>
+                        </div>
+                    </form>
+                    <div class="mt-2 d-flex flex-wrap align-items-center gap-2 small">
+                        <span class="text-white-50">Gợi ý tra cứu:</span>
+                        <a th:href="@{/tracking(codes='UTE261120A8K4P2')}" class="badge bg-light bg-opacity-25 text-white text-decoration-none font-mono py-1 px-2">UTE261120A8K4P2</a>
+                        <a th:href="@{/tracking(codes='UTE261119B7M2Q9')}" class="badge bg-light bg-opacity-25 text-white text-decoration-none font-mono py-1 px-2">UTE261119B7M2Q9</a>
+                        <a th:href="@{/tracking(codes='UTE261119C3N5X1')}" class="badge bg-light bg-opacity-25 text-white text-decoration-none font-mono py-1 px-2">UTE261119C3N5X1</a>
+                        <a th:href="@{/tracking(codes='UTE261118D9P4W7')}" class="badge bg-light bg-opacity-25 text-white text-decoration-none font-mono py-1 px-2">UTE261118D9P4W7</a>
+                        <a th:href="@{/tracking(codes='UTE261120A8K4P2, UTE261119B7M2Q9, UTE261119C3N5X1')}" class="badge bg-warning text-dark text-decoration-none py-1 px-2">Tra 3 mã cùng lúc</a>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <div class="container py-4">
+        <!-- Initial state before searching -->
+        <div th:if="${!hasSearched}" class="card border-0 shadow-sm text-center py-5 px-3">
+            <div class="card-body">
+                <i class="bi bi-box-seam text-primary display-3 opacity-50"></i>
+                <h4 class="fw-bold text-primary mt-3">Nhập mã vận đơn để bắt đầu tra cứu</h4>
+                <p class="text-muted mx-auto mb-4" style="max-width: 540px;">
+                    Hỗ trợ tra cứu cùng lúc từ 1 đến 5 mã vận đơn UTEExpress. Khi nhân viên bưu cục hoặc shipper cập nhật trạng thái,
+                    hành trình sẽ tự động hiển thị mà không cần tải lại trang.
+                </p>
+                <a th:href="@{/tracking(codes='UTE261120A8K4P2, UTE261119B7M2Q9')}" class="btn btn-ute-orange">
+                    <i class="bi bi-play-circle me-1"></i>Xem thử kết quả tra cứu mẫu
+                </a>
+            </div>
+        </div>
+
+        <!-- Search Results -->
+        <div th:if="${hasSearched and trackingResult != null}">
+            <!-- Warning Banner (> 5 codes) -->
+            <div th:if="${trackingResult.warningMessage != null}"
+                 class="alert alert-warning d-flex align-items-center shadow-sm mb-3" role="alert">
+                <i class="bi bi-exclamation-triangle-fill fs-5 me-2"></i>
+                <span th:text="${trackingResult.warningMessage}">Cảnh báo giới hạn 5 mã</span>
+            </div>
+
+            <!-- Not-found Codes Alert -->
+            <div th:if="${!#lists.isEmpty(trackingResult.notFoundCodes)}"
+                 class="alert alert-danger d-flex flex-wrap align-items-center gap-2 shadow-sm mb-4" role="alert">
+                <i class="bi bi-x-circle-fill fs-5"></i>
+                <span class="fw-semibold">Không tìm thấy vận đơn với các mã:</span>
+                <span th:each="missingCode : ${trackingResult.notFoundCodes}"
+                      class="badge bg-danger-subtle text-danger border border-danger-subtle font-mono"
+                      th:text="${missingCode}">UTE000000</span>
+            </div>
+
+            <!-- Empty found list -->
+            <div th:if="${#lists.isEmpty(trackingResult.shipments)}" class="card border-0 shadow-sm text-center py-5">
+                <div class="card-body">
+                    <i class="bi bi-search text-muted display-4"></i>
+                    <h5 class="fw-bold mt-3">Không có vận đơn nào khớp với yêu cầu</h5>
+                    <p class="text-muted small mb-0">Vui lòng kiểm tra lại mã vận đơn (định dạng <code>UTE...</code>) và thử lại.</p>
+                </div>
+            </div>
+
+            <!-- Multi-code Summary Strip (when > 1 shipment found) -->
+            <div th:if="${#lists.size(trackingResult.shipments) > 1}" class="mb-4">
+                <div class="d-flex align-items-center justify-content-between mb-2">
+                    <h6 class="fw-bold text-primary mb-0">
+                        <i class="bi bi-list-ul me-1"></i>Tóm tắt <span th:text="${#lists.size(trackingResult.shipments)}">2</span> vận đơn tìm thấy (bấm để cuộn tới chi tiết)
+                    </h6>
+                </div>
+                <div class="row g-3">
+                    <div class="col-md-6 col-lg-4" th:each="item : ${trackingResult.shipments}">
+                        <a th:href="'#shipment-card-' + ${item.trackingCode}"
+                           class="card summary-jump-card text-decoration-none text-dark h-100">
+                            <div class="card-body p-3">
+                                <div class="d-flex justify-content-between align-items-start gap-2 mb-2">
+                                    <span class="tracking-code fw-bold text-primary" th:text="${item.trackingCode}">UTE261120A8K4P2</span>
+                                    <span th:id="'summary-badge-' + ${item.trackingCode}"
+                                          th:class="'badge rounded-pill ' + ${item.statusBadgeClass}"
+                                          th:text="${item.statusLabel}">Trạng thái</span>
+                                </div>
+                                <div class="small font-mono text-muted mb-1">
+                                    <span th:text="${item.originHubCode}">HCM-TD01</span>
+                                    <i class="bi bi-arrow-right mx-1 text-warning"></i>
+                                    <span th:text="${item.destHubCode}">HN-CG01</span>
+                                    <span class="ms-2 badge bg-light text-secondary border" th:text="${item.serviceName}">Nhanh</span>
+                                </div>
+                                <div class="small text-truncate text-secondary" th:text="${item.itemName}">Tên hàng</div>
+                            </div>
+                        </a>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Shipment Detail Cards -->
+            <div class="d-flex flex-column gap-4">
+                <div class="card shadow-sm"
+                     th:each="item : ${trackingResult.shipments}"
+                     th:id="'shipment-card-' + ${item.trackingCode}"
+                     th:attr="data-tracking-code=${item.trackingCode}">
+
+                    <!-- Card Header -->
+                    <div class="card-header py-3 d-flex flex-wrap justify-content-between align-items-center gap-2">
+                        <div class="d-flex flex-wrap align-items-center gap-2">
+                            <span class="tracking-code fs-5 fw-bold text-primary" th:text="${item.trackingCode}">UTE261120A8K4P2</span>
+                            <button type="button" class="btn btn-outline-secondary btn-sm py-0 px-2"
+                                    title="Sao chép mã vận đơn"
+                                    th:attr="data-copy-code=${item.trackingCode}"
+                                    onclick="copyTrackingCode(this)">
+                                <i class="bi bi-clipboard"></i>
+                            </button>
+                            <span class="badge bg-primary-subtle text-primary" th:text="${item.serviceName}">Nhanh</span>
+                            <span th:if="${item.fragile}" class="badge bg-warning-subtle text-warning-emphasis border border-warning">
+                                <i class="bi bi-exclamation-diamond-fill me-1"></i>Hàng dễ vỡ
+                            </span>
+                        </div>
+                        <div class="d-flex flex-wrap align-items-center gap-2">
+                            <span class="badge bg-success-subtle text-success border border-success-subtle px-2 py-2 d-inline-flex align-items-center gap-1">
+                                <span class="live-dot"></span>
+                                <span>Đang cập nhật trực tiếp</span>
+                            </span>
+                            <span th:id="'status-badge-' + ${item.trackingCode}"
+                                  th:class="'badge rounded-pill px-3 py-2 ' + ${item.statusBadgeClass}"
+                                  th:text="${item.statusLabel}">Chờ lấy hàng</span>
+                        </div>
+                    </div>
+
+                    <div class="card-body p-4">
+                        <!-- 5-Step Progress Stepper -->
+                        <div th:if="${item.progressStep > 0}"
+                             th:id="'stepper-' + ${item.trackingCode}"
+                             class="ute-stepper mb-4 py-2">
+                            <div class="ute-step" data-step="1"
+                                 th:classappend="${item.progressStep == 1} ? 'current' : (${item.progressStep > 1} ? 'completed' : '')">
+                                <div class="ute-step-circle"><i class="bi bi-file-earmark-check"></i></div>
+                                <div class="ute-step-label">Đã tạo</div>
+                            </div>
+                            <div class="ute-step" data-step="2"
+                                 th:classappend="${item.progressStep == 2} ? 'current' : (${item.progressStep > 2} ? 'completed' : '')">
+                                <div class="ute-step-circle"><i class="bi bi-box-arrow-in-up"></i></div>
+                                <div class="ute-step-label">Đã lấy</div>
+                            </div>
+                            <div class="ute-step" data-step="3"
+                                 th:classappend="${item.progressStep == 3} ? 'current' : (${item.progressStep > 3} ? 'completed' : '')">
+                                <div class="ute-step-circle"><i class="bi bi-truck"></i></div>
+                                <div class="ute-step-label">Trung chuyển</div>
+                            </div>
+                            <div class="ute-step" data-step="4"
+                                 th:classappend="${item.progressStep == 4} ? 'current' : (${item.progressStep > 4} ? 'completed' : '')">
+                                <div class="ute-step-circle"><i class="bi bi-bicycle"></i></div>
+                                <div class="ute-step-label">Đang giao</div>
+                            </div>
+                            <div class="ute-step" data-step="5"
+                                 th:classappend="${item.progressStep == 5} ? 'completed' : ''">
+                                <div class="ute-step-circle"><i class="bi bi-check-lg"></i></div>
+                                <div class="ute-step-label">Hoàn thành</div>
+                            </div>
+                        </div>
+
+                        <!-- Cancelled / Returning Notice -->
+                        <div th:if="${item.progressStep == 0}"
+                             th:id="'stepper-cancelled-' + ${item.trackingCode}"
+                             class="alert alert-secondary d-flex align-items-center mb-4">
+                            <i class="bi bi-info-circle-fill me-2 fs-5"></i>
+                            <div>
+                                Vận đơn hiện đang ở trạng thái <strong th:text="${item.statusLabel}">Đã hủy</strong>.
+                            </div>
+                        </div>
+
+                        <!-- Route Banner -->
+                        <div class="bg-light border rounded-3 p-3 mb-4">
+                            <div class="row align-items-center g-3">
+                                <div class="col-md-8">
+                                    <div class="small text-muted mb-1">Tuyến định tuyến Chuỗi Bưu cục</div>
+                                    <div class="d-flex flex-wrap align-items-center gap-2">
+                                        <div>
+                                            <span class="badge bg-primary font-mono fs-6" th:text="${item.originHubCode}">HCM-TD01</span>
+                                            <span class="small fw-semibold ms-1" th:text="${item.originHubName}">Bưu cục Thủ Đức</span>
+                                        </div>
+                                        <i class="bi bi-arrow-right-circle-fill text-warning fs-5"></i>
+                                        <div>
+                                            <span class="badge bg-primary font-mono fs-6" th:text="${item.destHubCode}">HN-CG01</span>
+                                            <span class="small fw-semibold ms-1" th:text="${item.destHubName}">Bưu cục Cầu Giấy</span>
+                                        </div>
+                                    </div>
+                                </div>
+                                <div class="col-md-4 text-md-end">
+                                    <div class="small text-muted mb-1">Vị trí hiện tại</div>
+                                    <div class="fw-semibold text-primary">
+                                        <i class="bi bi-geo-alt-fill text-warning me-1"></i>
+                                        <span th:id="'current-hub-' + ${item.trackingCode}"
+                                              th:text="${item.currentHubName != null ? item.currentHubName : 'Đang cập nhật'}">Bưu cục Thủ Đức (HCM-TD01)</span>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- Masked Info Grid (BR-11 Compliant: NO COD, NO POD, NO street address) -->
+                        <div class="row g-3 mb-4">
+                            <div class="col-md-4">
+                                <div class="border rounded-3 p-3 h-100">
+                                    <div class="small text-uppercase text-muted fw-semibold mb-2">
+                                        <i class="bi bi-send text-primary me-1"></i>Người gửi (đã ẩn một phần)
+                                    </div>
+                                    <div class="fw-semibold" th:text="${item.maskedSenderName}">Shop Hoàng Nam ***</div>
+                                    <div class="small font-mono text-secondary mt-1">
+                                        <i class="bi bi-telephone me-1"></i><span th:text="${item.maskedSenderPhone}">090****567</span>
+                                    </div>
+                                    <div class="small text-muted mt-1">
+                                        <i class="bi bi-geo-alt me-1"></i><span th:text="${item.senderRegion}">TP. Thủ Đức, TP. Hồ Chí Minh</span>
+                                    </div>
+                                </div>
+                            </div>
+                            <div class="col-md-4">
+                                <div class="border rounded-3 p-3 h-100">
+                                    <div class="small text-uppercase text-muted fw-semibold mb-2">
+                                        <i class="bi bi-person-check text-warning me-1"></i>Người nhận (đã ẩn một phần)
+                                    </div>
+                                    <div class="fw-semibold" th:text="${item.maskedReceiverName}">Trần Minh ***</div>
+                                    <div class="small font-mono text-secondary mt-1">
+                                        <i class="bi bi-telephone me-1"></i><span th:text="${item.maskedReceiverPhone}">098****321</span>
+                                    </div>
+                                    <div class="small text-muted mt-1">
+                                        <i class="bi bi-geo-alt me-1"></i><span th:text="${item.receiverRegion}">Quận Cầu Giấy, Hà Nội</span>
+                                    </div>
+                                </div>
+                            </div>
+                            <div class="col-md-4">
+                                <div class="border rounded-3 p-3 h-100">
+                                    <div class="small text-uppercase text-muted fw-semibold mb-2">
+                                        <i class="bi bi-box2 text-success me-1"></i>Thông tin kiện hàng
+                                    </div>
+                                    <div class="fw-semibold" th:text="${item.itemName}">Tai nghe Bluetooth</div>
+                                    <div class="small text-secondary mt-1">
+                                        Trọng lượng tính cước:
+                                        <strong class="font-mono" th:text="${item.chargeableWeightKg + ' kg'}">2.00 kg</strong>
+                                    </div>
+                                    <div class="small text-muted mt-1">
+                                        Tạo lúc:
+                                        <span class="font-mono"
+                                              th:text="${item.createdAt != null ? #temporals.format(item.createdAt, 'dd/MM/yyyy HH:mm') : '—'}">20/11/2026 09:30</span>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- Privacy Notice -->
+                        <div class="small text-muted bg-light rounded px-3 py-2 mb-4 d-flex align-items-center gap-2">
+                            <i class="bi bi-shield-check text-primary"></i>
+                            <span>
+                                Theo chính sách bảo mật UTEExpress, địa chỉ chi tiết, số điện thoại đầy đủ, số tiền thu hộ (COD) và ảnh chứng từ (POD)
+                                chỉ hiển thị cho chủ vận đơn sau khi <a th:href="@{/auth/login}" class="text-decoration-none fw-semibold">đăng nhập</a>.
+                            </span>
+                        </div>
+
+                        <!-- Vertical Realtime Timeline -->
+                        <h6 class="fw-bold text-primary mb-3">
+                            <i class="bi bi-clock-history me-1"></i>Lịch sử hành trình chi tiết
+                        </h6>
+                        <ul class="tracking-timeline mb-0" th:id="'timeline-' + ${item.trackingCode}">
+                            <li class="tracking-timeline-item p-2 rounded" th:each="log : ${item.logs}">
+                                <div class="d-flex w-100 justify-content-between align-items-center flex-wrap gap-1">
+                                    <div class="fw-bold text-primary" th:text="${log.title}">Tiêu đề mốc hành trình</div>
+                                    <small class="text-muted font-mono"
+                                           th:text="${log.createdAt != null ? #temporals.format(log.createdAt, 'dd/MM/yyyy HH:mm') : ''}">20/11/2026 09:30</small>
+                                </div>
+                                <div class="small text-secondary mt-1"
+                                     th:if="${log.description != null and !#strings.isEmpty(log.description)}"
+                                     th:text="${log.description}">Mô tả chi tiết</div>
+                                <div class="small text-muted mt-1"
+                                     th:if="${log.hubName != null and !#strings.isEmpty(log.hubName)}">
+                                    <i class="bi bi-geo-alt-fill text-warning me-1"></i>
+                                    <span th:text="${log.hubName}">Bưu cục Thủ Đức (HCM-TD01)</span>
+                                </div>
+                            </li>
+                            <li th:if="${#lists.isEmpty(item.logs)}" class="tracking-timeline-item p-2 rounded text-muted small">
+                                Chưa có nhật ký hành trình chi tiết.
+                            </li>
+                        </ul>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<th:block layout:fragment="scripts">
+    <script th:src="@{/js/tracking-ws.js}"></script>
+    <script>
+        function copyTrackingCode(btn) {
+            const code = btn.getAttribute('data-copy-code');
+            if (!code || !navigator.clipboard) return;
+            navigator.clipboard.writeText(code).then(function () {
+                const icon = btn.querySelector('i');
+                if (icon) {
+                    icon.className = 'bi bi-check-lg text-success';
+                    setTimeout(function () {
+                        icon.className = 'bi bi-clipboard';
+                    }, 1500);
+                }
+            }).catch(function () {});
+        }
+
+        (function () {
+            const STEP_BY_STATUS = {
+                'PENDING_PAYMENT': 1,
+                'CREATED': 1,
+                'ASSIGNED_PICKUP': 1,
+                'PICKED_UP': 2,
+                'IN_ORIGIN_HUB': 2,
+                'IN_TRANSIT': 3,
+                'IN_DEST_HUB': 3,
+                'OUT_FOR_DELIVERY': 4,
+                'DELIVERY_FAILED': 4,
+                'DELIVERED': 5,
+                'RETURNING': 0,
+                'RETURNED': 0,
+                'CANCELLED': 0
+            };
+
+            function updateStepperLive(code, payload) {
+                const statusKey = payload && payload.status ? payload.status : '';
+                const step = STEP_BY_STATUS[statusKey];
+                if (typeof step === 'number' && step > 0) {
+                    const stepper = document.getElementById('stepper-' + code);
+                    if (stepper) {
+                        stepper.querySelectorAll('.ute-step').forEach(function (el) {
+                            const s = Number(el.getAttribute('data-step'));
+                            el.classList.remove('completed', 'current');
+                            if (step === 5 || s < step) {
+                                el.classList.add('completed');
+                            } else if (s === step) {
+                                el.classList.add('current');
+                            }
+                        });
+                    }
+                }
+                const summaryBadge = document.getElementById('summary-badge-' + code);
+                const mainBadge = document.getElementById('status-badge-' + code);
+                if (summaryBadge && mainBadge) {
+                    summaryBadge.className = mainBadge.className.replace('px-3 py-2', '');
+                    summaryBadge.textContent = mainBadge.textContent;
+                }
+            }
+
+            document.addEventListener('DOMContentLoaded', function () {
+                const cards = document.querySelectorAll('[data-tracking-code]');
+                const codes = Array.from(cards)
+                    .map(function (el) { return el.getAttribute('data-tracking-code'); })
+                    .filter(Boolean);
+
+                if (codes.length > 0 && window.UteTrackingWs) {
+                    window.UteTrackingWs.subscribe(codes, updateStepperLive);
+                }
+            });
+        })();
+    </script>
+</th:block>
+</body>
+</html>

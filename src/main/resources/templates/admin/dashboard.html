@@ -193,6 +193,18 @@
             let dailyChart = null;
             let statusChart = null;
             let hubChart = null;
+            let lastDashboardData = null;
+
+            function getChartThemePalette() {
+                const isDark = document.documentElement.getAttribute('data-theme') === 'dark';
+                return {
+                    isDark: isDark,
+                    textColor: isDark ? '#CBD5E1' : '#475569',
+                    gridColor: isDark ? 'rgba(148, 163, 184, 0.14)' : 'rgba(15, 23, 42, 0.08)',
+                    doughnutBorder: isDark ? '#111827' : '#FFFFFF',
+                    barColor: isDark ? 'rgba(96, 165, 250, 0.85)' : 'rgba(13, 71, 161, 0.78)'
+                };
+            }
 
             function formatVnd(val) {
                 return new Intl.NumberFormat('vi-VN').format(Math.round(Number(val) || 0)) + ' đ';
@@ -206,6 +218,8 @@
             }
 
             function renderCharts(data) {
+                lastDashboardData = data;
+                const palette = getChartThemePalette();
                 document.getElementById('kpiTotalShipments').textContent = data.totalShipments;
                 document.getElementById('kpiInProgress').textContent = data.inProgressShipments;
                 document.getElementById('kpiTotalRevenue').textContent = formatVnd(data.totalRevenue);
@@ -230,7 +244,7 @@
                                 type: 'bar',
                                 label: 'Số vận đơn',
                                 data: counts,
-                                backgroundColor: 'rgba(13, 71, 161, 0.75)',
+                                backgroundColor: palette.barColor,
                                 borderRadius: 4,
                                 yAxisID: 'y'
                             },
@@ -250,9 +264,22 @@
                         responsive: true,
                         maintainAspectRatio: false,
                         interaction: { mode: 'index', intersect: false },
+                        plugins: { legend: { labels: { color: palette.textColor } } },
                         scales: {
-                            y: { beginAtZero: true, ticks: { precision: 0 }, title: { display: true, text: 'Số đơn' } },
-                            y1: { beginAtZero: true, position: 'right', grid: { drawOnChartArea: false }, title: { display: true, text: 'VNĐ' } }
+                            x: { ticks: { color: palette.textColor }, grid: { color: palette.gridColor } },
+                            y: {
+                                beginAtZero: true,
+                                ticks: { precision: 0, color: palette.textColor },
+                                grid: { color: palette.gridColor },
+                                title: { display: true, text: 'Số đơn', color: palette.textColor }
+                            },
+                            y1: {
+                                beginAtZero: true,
+                                position: 'right',
+                                ticks: { color: palette.textColor },
+                                grid: { drawOnChartArea: false },
+                                title: { display: true, text: 'VNĐ', color: palette.textColor }
+                            }
                         }
                     }
                 });
@@ -266,14 +293,15 @@
                         labels: ['Giao thành công', 'Đang vận hành', 'Thất bại / Hoàn', 'Đã hủy'],
                         datasets: [{
                             data: [sb.delivered, sb.inProgress, sb.failedOrReturned, sb.cancelled],
-                            backgroundColor: ['#16A34A', '#0D47A1', '#DC2626', '#94A3B8'],
+                            backgroundColor: ['#16A34A', '#2563EB', '#DC2626', '#94A3B8'],
+                            borderColor: palette.doughnutBorder,
                             borderWidth: 2
                         }]
                     },
                     options: {
                         responsive: true,
                         maintainAspectRatio: false,
-                        plugins: { legend: { position: 'bottom' } }
+                        plugins: { legend: { position: 'bottom', labels: { color: palette.textColor } } }
                     }
                 });
 
@@ -285,7 +313,7 @@
                     data: {
                         labels: hubs.map(h => h.hubCode),
                         datasets: [
-                            { label: 'Đơn gửi đi', data: hubs.map(h => h.originCount), backgroundColor: '#0D47A1' },
+                            { label: 'Đơn gửi đi', data: hubs.map(h => h.originCount), backgroundColor: palette.barColor },
                             { label: 'Đơn nhận về', data: hubs.map(h => h.destCount), backgroundColor: '#F97316' }
                         ]
                     },
@@ -293,7 +321,11 @@
                         indexAxis: 'y',
                         responsive: true,
                         maintainAspectRatio: false,
-                        scales: { x: { beginAtZero: true, ticks: { precision: 0 } } }
+                        plugins: { legend: { labels: { color: palette.textColor } } },
+                        scales: {
+                            x: { beginAtZero: true, ticks: { precision: 0, color: palette.textColor }, grid: { color: palette.gridColor } },
+                            y: { ticks: { color: palette.textColor }, grid: { color: palette.gridColor } }
+                        }
                     }
                 });
 
@@ -354,6 +386,12 @@
                 document.getElementById('dashboardFilterForm').addEventListener('submit', function (e) {
                     e.preventDefault();
                     loadDashboard(fromInput.value, toInput.value);
+                });
+
+                window.addEventListener('ute-theme-changed', function () {
+                    if (lastDashboardData) {
+                        renderCharts(lastDashboardData);
+                    }
                 });
 
                 loadDashboard(fromInput.value, toInput.value);

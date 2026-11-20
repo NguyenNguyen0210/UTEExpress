@@ -1,0 +1,555 @@
+<!DOCTYPE html>
+<html lang="vi"
+      xmlns:th="http://www.thymeleaf.org"
+      xmlns:layout="http://www.ultraq.net.nz/thymeleaf/layout"
+      layout:decorate="~{layout/base-portal}">
+<head>
+    <title>Tạo vận đơn mới</title>
+    <style>
+        .service-option-card {
+            cursor: pointer;
+            transition: border-color 0.15s ease, background-color 0.15s ease, box-shadow 0.15s ease;
+        }
+        .service-option-card:hover {
+            border-color: #0D47A1 !important;
+        }
+        .service-option-card.selected-card {
+            border-color: #0D47A1 !important;
+            background-color: #EFF6FF;
+            box-shadow: 0 0 0 2px rgba(13, 71, 161, 0.15);
+        }
+    </style>
+</head>
+<body>
+<h5 layout:fragment="page-title"><i class="bi bi-plus-circle-fill text-warning me-2"></i>Tạo vận đơn mới</h5>
+
+<div layout:fragment="content">
+    <form id="createShipmentForm"
+          th:action="@{/customer/shipments}"
+          th:object="${shipmentForm}"
+          method="post"
+          data-auto-order-pricing="true">
+
+        <div class="row g-4">
+            <!-- LEFT COLUMN: 4 Cards (GHN 2-Column UX Standard) -->
+            <div class="col-lg-8">
+
+                <!-- CARD 1: SENDER -->
+                <div class="card mb-4">
+                    <div class="card-header py-3 d-flex flex-wrap justify-content-between align-items-center gap-2">
+                        <span><i class="bi bi-send-fill text-primary me-2"></i>1. Thông tin Người gửi</span>
+                        <a th:href="@{/customer/addresses}" class="btn btn-outline-primary btn-sm">
+                            <i class="bi bi-journal-bookmark me-1"></i>Quản lý sổ địa chỉ
+                        </a>
+                    </div>
+                    <div class="card-body">
+                        <!-- Quick Pick from Address Book -->
+                        <div class="mb-3" th:if="${!#lists.isEmpty(addresses)}">
+                            <label for="savedAddressSelect" class="form-label fw-semibold small text-primary">
+                                <i class="bi bi-lightning-charge-fill text-warning me-1"></i>Chọn nhanh từ Sổ địa chỉ đã lưu
+                            </label>
+                            <select id="savedAddressSelect" class="form-select border-primary-subtle">
+                                <option value="">-- Nhập thủ công hoặc chọn địa chỉ lấy hàng --</option>
+                                <option th:each="addr : ${addresses}"
+                                        th:value="${addr.id}"
+                                        th:selected="${addr.isDefault}"
+                                        th:attr="data-name=${addr.contactName},data-phone=${addr.contactPhone},data-province=${addr.province},data-district=${addr.district},data-address=${addr.addressDetail}"
+                                        th:text="${addr.label + (addr.isDefault ? ' (Mặc định)' : '') + ' — ' + addr.contactName + ' (' + addr.contactPhone + ') — ' + addr.district + ', ' + addr.province}">
+                                    Kho Chính Thủ Đức
+                                </option>
+                            </select>
+                        </div>
+
+                        <div class="row g-3">
+                            <div class="col-md-6">
+                                <label for="senderName" class="form-label fw-semibold">
+                                    Tên người gửi / Shop <span class="text-danger">*</span>
+                                </label>
+                                <input type="text" id="senderName" th:field="*{senderName}" class="form-control"
+                                       th:classappend="${#fields.hasErrors('senderName')} ? 'is-invalid'"
+                                       placeholder="VD: Shop Hoàng Nam Tech" maxlength="120" required>
+                                <div class="invalid-feedback" th:errors="*{senderName}"></div>
+                            </div>
+                            <div class="col-md-6">
+                                <label for="senderPhone" class="form-label fw-semibold">
+                                    Số điện thoại gửi <span class="text-danger">*</span>
+                                </label>
+                                <input type="text" id="senderPhone" th:field="*{senderPhone}" class="form-control font-mono"
+                                       th:classappend="${#fields.hasErrors('senderPhone')} ? 'is-invalid'"
+                                       placeholder="090xxxxxxx" maxlength="20" required>
+                                <div class="invalid-feedback" th:errors="*{senderPhone}"></div>
+                            </div>
+                            <div class="col-md-6">
+                                <label for="senderProvince" class="form-label fw-semibold">
+                                    Tỉnh / Thành phố gửi <span class="text-danger">*</span>
+                                </label>
+                                <select id="senderProvince" th:field="*{senderProvince}" class="form-select"
+                                        th:classappend="${#fields.hasErrors('senderProvince')} ? 'is-invalid'" required>
+                                    <option value="">-- Chọn Tỉnh / Thành phố --</option>
+                                    <option th:each="p : ${provinces}" th:value="${p}" th:text="${p}"></option>
+                                </select>
+                                <div class="invalid-feedback" th:errors="*{senderProvince}"></div>
+                            </div>
+                            <div class="col-md-6">
+                                <label for="senderDistrict" class="form-label fw-semibold">
+                                    Quận / Huyện gửi <span class="text-danger">*</span>
+                                </label>
+                                <input type="text" id="senderDistrict" th:field="*{senderDistrict}" class="form-control"
+                                       th:classappend="${#fields.hasErrors('senderDistrict')} ? 'is-invalid'"
+                                       placeholder="VD: TP. Thủ Đức, Quận 1..." maxlength="100" required>
+                                <div class="invalid-feedback" th:errors="*{senderDistrict}"></div>
+                            </div>
+                            <div class="col-12">
+                                <label for="senderAddress" class="form-label fw-semibold">
+                                    Địa chỉ chi tiết lấy hàng <span class="text-danger">*</span>
+                                </label>
+                                <input type="text" id="senderAddress" th:field="*{senderAddress}" class="form-control"
+                                       th:classappend="${#fields.hasErrors('senderAddress')} ? 'is-invalid'"
+                                       placeholder="Số nhà, tên đường, phường/xã..." maxlength="255" required>
+                                <div class="invalid-feedback" th:errors="*{senderAddress}"></div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- CARD 2: RECEIVER -->
+                <div class="card mb-4">
+                    <div class="card-header py-3">
+                        <i class="bi bi-person-check-fill text-warning me-2"></i>2. Thông tin Người nhận
+                    </div>
+                    <div class="card-body">
+                        <div class="row g-3">
+                            <div class="col-md-6">
+                                <label for="receiverName" class="form-label fw-semibold">
+                                    Họ tên người nhận <span class="text-danger">*</span>
+                                </label>
+                                <input type="text" id="receiverName" th:field="*{receiverName}" class="form-control"
+                                       th:classappend="${#fields.hasErrors('receiverName')} ? 'is-invalid'"
+                                       placeholder="VD: Trần Minh Anh" maxlength="120" required>
+                                <div class="invalid-feedback" th:errors="*{receiverName}"></div>
+                            </div>
+                            <div class="col-md-6">
+                                <label for="receiverPhone" class="form-label fw-semibold">
+                                    Số điện thoại người nhận <span class="text-danger">*</span>
+                                </label>
+                                <input type="text" id="receiverPhone" th:field="*{receiverPhone}" class="form-control font-mono"
+                                       th:classappend="${#fields.hasErrors('receiverPhone')} ? 'is-invalid'"
+                                       placeholder="098xxxxxxx" maxlength="20" required>
+                                <div class="invalid-feedback" th:errors="*{receiverPhone}"></div>
+                            </div>
+                            <div class="col-md-6">
+                                <label for="receiverProvince" class="form-label fw-semibold">
+                                    Tỉnh / Thành phố nhận <span class="text-danger">*</span>
+                                </label>
+                                <select id="receiverProvince" th:field="*{receiverProvince}" class="form-select"
+                                        th:classappend="${#fields.hasErrors('receiverProvince')} ? 'is-invalid'" required>
+                                    <option value="">-- Chọn Tỉnh / Thành phố --</option>
+                                    <option th:each="p : ${provinces}" th:value="${p}" th:text="${p}"></option>
+                                </select>
+                                <div class="form-text">Tự động định tuyến tới Bưu cục nhận phù hợp theo mạng lưới UTEExpress.</div>
+                                <div class="invalid-feedback" th:errors="*{receiverProvince}"></div>
+                            </div>
+                            <div class="col-md-6">
+                                <label for="receiverDistrict" class="form-label fw-semibold">
+                                    Quận / Huyện nhận <span class="text-danger">*</span>
+                                </label>
+                                <input type="text" id="receiverDistrict" th:field="*{receiverDistrict}" class="form-control"
+                                       th:classappend="${#fields.hasErrors('receiverDistrict')} ? 'is-invalid'"
+                                       placeholder="VD: Quận Cầu Giấy, TP. Thủ Đức..." maxlength="100" required>
+                                <div class="invalid-feedback" th:errors="*{receiverDistrict}"></div>
+                            </div>
+                            <div class="col-12">
+                                <label for="receiverAddress" class="form-label fw-semibold">
+                                    Địa chỉ chi tiết giao hàng <span class="text-danger">*</span>
+                                </label>
+                                <input type="text" id="receiverAddress" th:field="*{receiverAddress}" class="form-control"
+                                       th:classappend="${#fields.hasErrors('receiverAddress')} ? 'is-invalid'"
+                                       placeholder="Số nhà, tên đường, phường/xã, tòa nhà..." maxlength="255" required>
+                                <div class="invalid-feedback" th:errors="*{receiverAddress}"></div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- CARD 3: ITEM & INSPECTION POLICY -->
+                <div class="card mb-4">
+                    <div class="card-header py-3">
+                        <i class="bi bi-box2-fill text-primary me-2"></i>3. Thông tin Hàng hóa & Lưu ý đồng kiểm
+                    </div>
+                    <div class="card-body">
+                        <div class="row g-3">
+                            <div class="col-md-8">
+                                <label for="itemName" class="form-label fw-semibold">
+                                    Tên hàng hóa <span class="text-danger">*</span>
+                                </label>
+                                <input type="text" id="itemName" th:field="*{itemName}" class="form-control"
+                                       th:classappend="${#fields.hasErrors('itemName')} ? 'is-invalid'"
+                                       placeholder="VD: Tai nghe Bluetooth Sony WH-1000XM5" maxlength="200" required>
+                                <div class="invalid-feedback" th:errors="*{itemName}"></div>
+                            </div>
+                            <div class="col-md-4">
+                                <label for="actualWeightKg" class="form-label fw-semibold">
+                                    Trọng lượng thực (kg) <span class="text-danger">*</span>
+                                </label>
+                                <div class="input-group">
+                                    <input type="number" id="actualWeightKg" th:field="*{actualWeightKg}"
+                                           class="form-control font-mono"
+                                           th:classappend="${#fields.hasErrors('actualWeightKg')} ? 'is-invalid'"
+                                           step="0.1" min="0.01" placeholder="1.0" required>
+                                    <span class="input-group-text">kg</span>
+                                    <div class="invalid-feedback" th:errors="*{actualWeightKg}"></div>
+                                </div>
+                            </div>
+
+                            <!-- Optional Dimensions D x R x C -->
+                            <div class="col-12">
+                                <label class="form-label fw-semibold">
+                                    Kích thước kiện hàng (tùy chọn — Dài × Rộng × Cao, đơn vị cm)
+                                </label>
+                                <div class="row g-2">
+                                    <div class="col-4">
+                                        <div class="input-group">
+                                            <span class="input-group-text small">D</span>
+                                            <input type="number" id="lengthCm" th:field="*{lengthCm}"
+                                                   class="form-control font-mono" min="0" placeholder="Dài">
+                                        </div>
+                                    </div>
+                                    <div class="col-4">
+                                        <div class="input-group">
+                                            <span class="input-group-text small">R</span>
+                                            <input type="number" id="widthCm" th:field="*{widthCm}"
+                                                   class="form-control font-mono" min="0" placeholder="Rộng">
+                                        </div>
+                                    </div>
+                                    <div class="col-4">
+                                        <div class="input-group">
+                                            <span class="input-group-text small">C</span>
+                                            <input type="number" id="heightCm" th:field="*{heightCm}"
+                                                   class="form-control font-mono" min="0" placeholder="Cao">
+                                        </div>
+                                    </div>
+                                </div>
+                                <div class="form-text">
+                                    Nếu nhập đủ 3 chiều, trọng lượng quy đổi = <code>(D × R × C) / 5000</code> (kg), tính cước theo giá trị lớn hơn và làm tròn lên bước <code>0.5 kg</code>.
+                                </div>
+                            </div>
+
+                            <!-- Fragile Checkbox -->
+                            <div class="col-12">
+                                <div class="form-check form-switch p-3 bg-warning-subtle border border-warning-subtle rounded-3">
+                                    <input class="form-check-input ms-0 me-2" type="checkbox" id="isFragileCheck" th:field="*{isFragile}">
+                                    <label class="form-check-label fw-semibold text-warning-emphasis" for="isFragileCheck">
+                                        <i class="bi bi-exclamation-diamond-fill me-1"></i>Đánh dấu Hàng dễ vỡ (In cảnh báo nổi bật trên tem vận đơn PDF & giao diện Shipper)
+                                    </label>
+                                </div>
+                            </div>
+
+                            <!-- Inspection Policy Radios -->
+                            <div class="col-12">
+                                <label class="form-label fw-semibold">
+                                    Quy định đồng kiểm (Chuẩn GHN / Viettel Post) <span class="text-danger">*</span>
+                                </label>
+                                <div class="row g-2">
+                                    <div class="col-md-4" th:each="policy : ${inspectionPolicies}">
+                                        <label class="border rounded-3 p-2 px-3 d-flex align-items-center gap-2 h-100 bg-light"
+                                               style="cursor: pointer;" th:for="'policy_' + ${policy.name()}">
+                                            <input class="form-check-input mt-0" type="radio"
+                                                   th:field="*{inspectionPolicy}"
+                                                   th:value="${policy.name()}"
+                                                   th:id="'policy_' + ${policy.name()}" required>
+                                            <span class="small fw-medium" th:text="${policy.label}">Cho xem hàng, không cho thử</span>
+                                        </label>
+                                    </div>
+                                </div>
+                            </div>
+
+                            <!-- Delivery Note -->
+                            <div class="col-12">
+                                <label for="note" class="form-label fw-semibold">Ghi chú giao hàng</label>
+                                <textarea id="note" th:field="*{note}" class="form-control" rows="2"
+                                          placeholder="VD: Gọi trước khi giao 15 phút, giao giờ hành chính..."></textarea>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- CARD 4: SERVICE TYPE, COD & PAYMENT -->
+                <div class="card mb-4">
+                    <div class="card-header py-3">
+                        <i class="bi bi-truck text-primary me-2"></i>4. Gói dịch vụ, Thu hộ COD & Thanh toán
+                    </div>
+                    <div class="card-body">
+                        <!-- Service Type Cards -->
+                        <div class="mb-4">
+                            <label class="form-label fw-semibold">
+                                Chọn Gói dịch vụ vận chuyển <span class="text-danger">*</span>
+                            </label>
+                            <div class="row g-3">
+                                <div class="col-md-4" th:each="svc : ${serviceTypes}">
+                                    <label class="card service-option-card h-100 p-3 mb-0"
+                                           th:for="'svc_' + ${svc.id}"
+                                           th:classappend="${shipmentForm.serviceTypeId != null and shipmentForm.serviceTypeId == svc.id} ? 'selected-card' : ''">
+                                        <div class="d-flex justify-content-between align-items-start mb-2">
+                                            <div>
+                                                <span class="badge bg-primary-subtle text-primary font-mono mb-1"
+                                                      th:text="${svc.code}">STANDARD</span>
+                                                <div class="fw-bold text-dark" th:text="${svc.name}">Tiêu chuẩn</div>
+                                            </div>
+                                            <input class="form-check-input mt-1" type="radio"
+                                                   th:field="*{serviceTypeId}"
+                                                   th:value="${svc.id}"
+                                                   th:id="'svc_' + ${svc.id}" required>
+                                        </div>
+                                        <div class="font-mono fw-bold fs-6 mb-1" style="color: #F97316;"
+                                             th:text="'Từ ' + ${#numbers.formatDecimal(svc.baseFee, 1, 'POINT', 0, 'COMMA')} + ' đ'">
+                                            Từ 20.000 đ
+                                        </div>
+                                        <div class="small text-muted mb-1">
+                                            <i class="bi bi-clock me-1"></i>
+                                            <span th:text="${svc.estimatedDaysMin == 0} ? ('Trong ngày - ' + ${svc.estimatedDaysMax} + ' ngày') : (${svc.estimatedDaysMin} + ' - ' + ${svc.estimatedDaysMax} + ' ngày')">
+                                                3 - 5 ngày
+                                            </span>
+                                        </div>
+                                        <div class="small text-secondary" th:if="${svc.description != null}" th:text="${svc.description}">
+                                            Mô tả gói
+                                        </div>
+                                    </label>
+                                </div>
+                            </div>
+                            <div class="text-danger small mt-1" th:if="${#fields.hasErrors('serviceTypeId')}" th:errors="*{serviceTypeId}"></div>
+                        </div>
+
+                        <div class="row g-3">
+                            <!-- COD Amount -->
+                            <div class="col-md-6">
+                                <label for="codAmount" class="form-label fw-semibold">
+                                    Tiền thu hộ COD (VNĐ)
+                                </label>
+                                <div class="input-group">
+                                    <input type="number" id="codAmount" th:field="*{codAmount}"
+                                           class="form-control font-mono"
+                                           th:classappend="${#fields.hasErrors('codAmount')} ? 'is-invalid'"
+                                           min="0" step="1000" placeholder="0">
+                                    <span class="input-group-text">đ</span>
+                                    <div class="invalid-feedback" th:errors="*{codAmount}"></div>
+                                </div>
+                                <div class="form-text">Nhập <code>0</code> nếu không thu hộ tiền hàng.</div>
+                            </div>
+
+                            <!-- Payer Type -->
+                            <div class="col-md-6">
+                                <label class="form-label fw-semibold">
+                                    Người trả cước vận chuyển <span class="text-danger">*</span>
+                                </label>
+                                <div class="d-flex gap-3 pt-1">
+                                    <div class="form-check">
+                                        <input class="form-check-input" type="radio"
+                                               id="payerSender" th:field="*{payerType}" value="SENDER" required>
+                                        <label class="form-check-label fw-medium" for="payerSender">
+                                            Người gửi trả
+                                        </label>
+                                    </div>
+                                    <div class="form-check">
+                                        <input class="form-check-input" type="radio"
+                                               id="payerReceiver" th:field="*{payerType}" value="RECEIVER" required>
+                                        <label class="form-check-label fw-medium" for="payerReceiver">
+                                            Người nhận trả
+                                        </label>
+                                    </div>
+                                </div>
+                            </div>
+
+                            <!-- Payment Method -->
+                            <div class="col-12">
+                                <label class="form-label fw-semibold">
+                                    Hình thức thanh toán cước <span class="text-danger">*</span>
+                                </label>
+                                <div class="row g-3">
+                                    <div class="col-md-6">
+                                        <label class="border rounded-3 p-3 d-flex align-items-start gap-2 h-100"
+                                               style="cursor: pointer;" for="payCash">
+                                            <input class="form-check-input mt-1" type="radio"
+                                                   id="payCash" th:field="*{paymentMethod}" value="CASH" required>
+                                            <div>
+                                                <div class="fw-semibold">
+                                                    <i class="bi bi-cash-stack text-success me-1"></i>Tiền mặt / Cấn trừ COD
+                                                </div>
+                                                <div class="small text-muted">
+                                                    Tạo đơn sẵn sàng lấy hàng ngay lập tức (<code>CREATED</code>).
+                                                </div>
+                                            </div>
+                                        </label>
+                                    </div>
+                                    <div class="col-md-6">
+                                        <div id="vnpayMethodWrapper" data-payment-option="VNPAY" class="h-100">
+                                            <label class="border rounded-3 p-3 d-flex align-items-start gap-2 h-100"
+                                                   style="cursor: pointer;" for="payVnpay">
+                                                <input class="form-check-input mt-1" type="radio"
+                                                       id="payVnpay" th:field="*{paymentMethod}" value="VNPAY" required>
+                                                <div>
+                                                    <div class="fw-semibold">
+                                                        <i class="bi bi-credit-card-2-front text-primary me-1"></i>VNPay Sandbox
+                                                    </div>
+                                                    <div class="small text-muted">
+                                                        Thanh toán cước trực tuyến. Chỉ áp dụng khi <strong>Người gửi trả cước</strong>.
+                                                    </div>
+                                                </div>
+                                            </label>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- RIGHT COLUMN: STICKY PRICING SUMMARY -->
+            <div class="col-lg-4">
+                <div class="card sticky-top shadow-sm" style="top: 84px; z-index: 10;">
+                    <div class="card-header py-3 d-flex justify-content-between align-items-center bg-white">
+                        <span class="fw-bold text-primary">
+                            <i class="bi bi-receipt-cutoff text-warning me-2"></i>Tóm tắt cước phí
+                        </span>
+                        <span id="summaryRouteType" class="badge bg-primary-subtle text-primary">Chưa xác định</span>
+                    </div>
+                    <div class="card-body">
+                        <!-- Routing Preview -->
+                        <div class="bg-light border rounded-3 p-3 mb-3">
+                            <div class="small text-muted mb-1">Tuyến định tuyến Bưu cục</div>
+                            <div id="summaryRoute" class="routing-code fw-bold text-primary fs-6">-- → --</div>
+                            <div class="small text-muted mt-1">
+                                Thời gian dự kiến: <strong id="summaryEstimatedDays" class="text-dark">--</strong>
+                            </div>
+                        </div>
+
+                        <!-- Weight Breakdown -->
+                        <div class="small mb-3">
+                            <div class="d-flex justify-content-between mb-1">
+                                <span class="text-muted">Trọng lượng quy đổi (D×R×C/5000):</span>
+                                <span id="summaryVolumetricWeight" class="font-mono fw-medium">0.00 kg</span>
+                            </div>
+                            <div class="d-flex justify-content-between">
+                                <span class="text-muted">Trọng lượng tính cước:</span>
+                                <span id="summaryChargeableWeight" class="font-mono fw-bold text-primary">0.00 kg</span>
+                            </div>
+                        </div>
+
+                        <hr class="my-3">
+
+                        <!-- Fee Breakdown -->
+                        <div class="small mb-2">
+                            <div class="d-flex justify-content-between mb-2">
+                                <span class="text-muted">Cước vận chuyển:</span>
+                                <span id="summaryShippingFee" class="font-mono fw-semibold">0 đ</span>
+                            </div>
+                            <div class="d-flex justify-content-between mb-2">
+                                <span class="text-muted">Phí thu hộ COD:</span>
+                                <span id="summaryCodFee" class="font-mono fw-semibold">0 đ</span>
+                            </div>
+                        </div>
+
+                        <hr class="my-3">
+
+                        <!-- Totals -->
+                        <div class="d-flex justify-content-between align-items-baseline mb-2">
+                            <span class="fw-bold">Tổng cước phí:</span>
+                            <span id="summaryTotalFee" class="font-mono fw-bold fs-4" style="color: #F97316;">0 đ</span>
+                        </div>
+
+                        <div class="bg-primary-subtle bg-opacity-25 border border-primary-subtle rounded-3 p-3 mt-3">
+                            <div class="d-flex justify-content-between align-items-center">
+                                <span class="small fw-semibold text-primary">Tổng tiền thu người nhận:</span>
+                                <span id="summaryReceiverCollect" class="font-mono fw-bold fs-5 text-primary">0 đ</span>
+                            </div>
+                            <div class="text-muted mt-1" style="font-size: 0.75rem;">
+                                Bao gồm tiền thu hộ COD và cước vận chuyển (nếu chọn Người nhận trả cước).
+                            </div>
+                        </div>
+
+                        <!-- Submit Button -->
+                        <button type="submit" id="submitOrderBtn" class="btn btn-ute-orange btn-lg w-100 mt-4 py-2 shadow-sm">
+                            <span id="submitOrderSpinner" class="spinner-border spinner-border-sm me-2 d-none" role="status"></span>
+                            <i id="submitOrderIcon" class="bi bi-send-check me-1"></i>
+                            <span id="submitOrderBtnText">Tạo vận đơn</span>
+                        </button>
+
+                        <div class="text-muted small mt-3">
+                            <i class="bi bi-shield-check text-success me-1"></i>
+                            Bạn có thể hủy vận đơn miễn phí trước khi Shipper lấy hàng.
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </form>
+</div>
+
+<th:block layout:fragment="scripts">
+    <script th:src="@{/js/order-form.js}"></script>
+    <script>
+        (function () {
+            'use strict';
+
+            document.addEventListener('DOMContentLoaded', function () {
+                // 1. Saved Address Book auto-fill
+                const savedSelect = document.getElementById('savedAddressSelect');
+                if (savedSelect) {
+                    savedSelect.addEventListener('change', function () {
+                        const selectedOpt = savedSelect.options[savedSelect.selectedIndex];
+                        if (!selectedOpt || !selectedOpt.value) return;
+
+                        const nameEl = document.getElementById('senderName');
+                        const phoneEl = document.getElementById('senderPhone');
+                        const provEl = document.getElementById('senderProvince');
+                        const distEl = document.getElementById('senderDistrict');
+                        const addrEl = document.getElementById('senderAddress');
+
+                        if (nameEl) nameEl.value = selectedOpt.getAttribute('data-name') || '';
+                        if (phoneEl) phoneEl.value = selectedOpt.getAttribute('data-phone') || '';
+                        if (distEl) distEl.value = selectedOpt.getAttribute('data-district') || '';
+                        if (addrEl) addrEl.value = selectedOpt.getAttribute('data-address') || '';
+                        if (provEl) {
+                            provEl.value = selectedOpt.getAttribute('data-province') || '';
+                            provEl.dispatchEvent(new Event('change', { bubbles: true }));
+                        }
+                    });
+                }
+
+                // 2. Highlight active service card
+                const serviceRadios = document.querySelectorAll('input[name="serviceTypeId"]');
+                function syncServiceCardHighlight() {
+                    document.querySelectorAll('.service-option-card').forEach(function (card) {
+                        card.classList.remove('selected-card');
+                    });
+                    const checked = document.querySelector('input[name="serviceTypeId"]:checked');
+                    if (checked) {
+                        const card = checked.closest('.service-option-card');
+                        if (card) card.classList.add('selected-card');
+                    }
+                }
+                serviceRadios.forEach(function (radio) {
+                    radio.addEventListener('change', syncServiceCardHighlight);
+                });
+                syncServiceCardHighlight();
+
+                // 3. Prevent double submit with loading spinner
+                const form = document.getElementById('createShipmentForm');
+                const submitBtn = document.getElementById('submitOrderBtn');
+                const spinner = document.getElementById('submitOrderSpinner');
+                const icon = document.getElementById('submitOrderIcon');
+
+                if (form && submitBtn) {
+                    form.addEventListener('submit', function () {
+                        if (!form.checkValidity()) return;
+                        submitBtn.disabled = true;
+                        if (spinner) spinner.classList.remove('d-none');
+                        if (icon) icon.classList.add('d-none');
+                    });
+                }
+            });
+        })();
+    </script>
+</th:block>
+</body>
+</html>

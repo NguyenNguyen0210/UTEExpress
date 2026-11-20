@@ -1,5 +1,6 @@
 package com.uteexpress.service;
 
+import com.uteexpress.dto.ws.ShipmentStatusChangedEvent;
 import com.uteexpress.entity.Hub;
 import com.uteexpress.entity.Shipment;
 import com.uteexpress.entity.ShipmentTrackingLog;
@@ -16,6 +17,7 @@ import com.uteexpress.repository.ShipmentRepository;
 import com.uteexpress.repository.ShipmentTrackingLogRepository;
 import com.uteexpress.repository.UserRepository;
 import lombok.RequiredArgsConstructor;
+import org.springframework.context.ApplicationEventPublisher;
 import org.springframework.security.access.AccessDeniedException;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -32,6 +34,7 @@ public class ShipmentService {
     private final ShipmentTrackingLogRepository trackingLogRepository;
     private final UserRepository userRepository;
     private final ShipmentStateMachine stateMachine;
+    private final ApplicationEventPublisher eventPublisher;
 
     public Shipment getShipmentById(Long id) {
         return shipmentRepository.findById(id)
@@ -405,7 +408,11 @@ public class ShipmentService {
                 .description(description)
                 .createdAt(OffsetDateTime.now())
                 .build();
-        return trackingLogRepository.save(log);
+        ShipmentTrackingLog savedLog = trackingLogRepository.save(log);
+        if (eventPublisher != null) {
+            eventPublisher.publishEvent(ShipmentStatusChangedEvent.from(shipment, savedLog));
+        }
+        return savedLog;
     }
 
     public BigDecimal calculateReceiverCollectAmount(Shipment shipment) {

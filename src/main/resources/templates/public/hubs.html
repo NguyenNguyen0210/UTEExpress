@@ -1,0 +1,118 @@
+<!DOCTYPE html>
+<html lang="vi"
+      xmlns:th="http://www.thymeleaf.org"
+      xmlns:layout="http://www.ultraq.net.nz/thymeleaf/layout"
+      layout:decorate="~{layout/base-public}">
+<head>
+    <title>Mạng lưới Chuỗi Bưu cục</title>
+</head>
+<body>
+<div layout:fragment="content">
+    <!-- Banner -->
+    <section class="hero-ute py-4">
+        <div class="container">
+            <h2 class="fw-bold mb-1"><i class="bi bi-geo-alt-fill me-2 text-warning"></i>Mạng lưới Chuỗi Bưu cục UTEExpress</h2>
+            <p class="text-white-50 small mb-0">
+                Tra cứu địa chỉ, mã định tuyến (Routing Code) và hotline các bưu cục giao dịch &amp; kho trung chuyển đang hoạt động.
+            </p>
+        </div>
+    </section>
+
+    <div class="container py-4">
+        <!-- Filter Bar -->
+        <div class="card shadow-sm mb-4">
+            <div class="card-body p-3 p-md-4">
+                <form th:action="@{/hubs}" method="get" class="row g-3 align-items-end">
+                    <div class="col-md-5">
+                        <label for="provinceFilter" class="form-label fw-semibold small">Tỉnh / Thành phố</label>
+                        <select id="provinceFilter" name="province" class="form-select">
+                            <option value="">Tất cả Tỉnh / Thành phố</option>
+                            <option th:each="p : ${provinces}"
+                                    th:value="${p}"
+                                    th:text="${p}"
+                                    th:selected="${selectedProvince != null and selectedProvince == p}">TP. Hồ Chí Minh</option>
+                        </select>
+                    </div>
+                    <div class="col-md-4">
+                        <label for="typeFilter" class="form-label fw-semibold small">Loại hình</label>
+                        <select id="typeFilter" name="type" class="form-select">
+                            <option value="">Tất cả loại hình</option>
+                            <option th:each="t : ${hubTypes}"
+                                    th:value="${t.name()}"
+                                    th:text="${t.label}"
+                                    th:selected="${selectedType != null and selectedType == t}">Bưu cục</option>
+                        </select>
+                    </div>
+                    <div class="col-md-3 d-flex gap-2">
+                        <button type="submit" class="btn btn-ute-navy flex-grow-1">
+                            <i class="bi bi-funnel me-1"></i>Lọc bưu cục
+                        </button>
+                        <a th:href="@{/hubs}" class="btn btn-outline-secondary" title="Đặt lại bộ lọc">
+                            <i class="bi bi-arrow-counterclockwise"></i>
+                        </a>
+                    </div>
+                </form>
+            </div>
+        </div>
+
+        <!-- Result Count -->
+        <div class="d-flex justify-content-between align-items-center mb-3">
+            <div class="text-muted small">
+                Tìm thấy <strong class="text-primary" th:text="${#lists.size(hubs)}">0</strong> điểm giao dịch / kho trung chuyển đang hoạt động
+            </div>
+            <a th:href="@{/estimate}" class="btn btn-outline-primary btn-sm">
+                <i class="bi bi-calculator me-1"></i>Ước tính cước giữa các tỉnh
+            </a>
+        </div>
+
+        <!-- Empty State -->
+        <div th:if="${#lists.isEmpty(hubs)}" class="card border-0 shadow-sm text-center py-5">
+            <div class="card-body">
+                <i class="bi bi-building-x display-4 text-muted"></i>
+                <h5 class="fw-bold mt-3">Không tìm thấy bưu cục phù hợp</h5>
+                <p class="text-muted small mb-3">Thử thay đổi bộ lọc Tỉnh/Thành hoặc loại hình bưu cục.</p>
+                <a th:href="@{/hubs}" class="btn btn-ute-navy btn-sm">Xem toàn bộ mạng lưới bưu cục</a>
+            </div>
+        </div>
+
+        <!-- Hubs Card Grid -->
+        <div th:if="${!#lists.isEmpty(hubs)}" class="row row-cols-1 row-cols-md-2 row-cols-lg-3 g-4">
+            <div class="col" th:each="hub : ${hubs}">
+                <div class="card h-100 shadow-sm">
+                    <div class="card-body p-4 d-flex flex-column">
+                        <div class="d-flex justify-content-between align-items-center mb-3">
+                            <span class="badge bg-primary-subtle text-primary font-mono fs-6" th:text="${hub.code}">HCM-TD01</span>
+                            <span th:if="${hub.type.name() == 'SORTING_HUB'}"
+                                  class="badge bg-warning-subtle text-warning-emphasis"
+                                  th:text="${hub.type.label}">Kho trung chuyển</span>
+                            <span th:if="${hub.type.name() == 'POST_OFFICE'}"
+                                  class="badge bg-info-subtle text-info-emphasis"
+                                  th:text="${hub.type.label}">Bưu cục</span>
+                        </div>
+
+                        <h5 class="fw-bold text-dark mb-2" th:text="${hub.name}">Bưu cục Thủ Đức</h5>
+
+                        <div class="small text-muted mb-2">
+                            <i class="bi bi-pin-map-fill text-primary me-1"></i>
+                            <span class="fw-medium text-dark" th:text="${hub.district + ', ' + hub.province}">TP. Thủ Đức, TP. Hồ Chí Minh</span>
+                        </div>
+
+                        <div class="small text-secondary mb-3 flex-grow-1">
+                            <i class="bi bi-geo-alt text-warning me-1"></i>
+                            <span th:text="${hub.address}">01 Võ Văn Ngân, Phường Linh Chiểu</span>
+                        </div>
+
+                        <div class="pt-3 border-top d-flex justify-content-between align-items-center small">
+                            <a th:href="'tel:' + ${hub.phone}" class="text-decoration-none fw-semibold text-primary font-mono">
+                                <i class="bi bi-telephone-fill me-1"></i><span th:text="${hub.phone}">02838968641</span>
+                            </a>
+                            <span class="text-muted"><i class="bi bi-clock me-1"></i>07:30 - 20:00</span>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+</body>
+</html>

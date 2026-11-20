@@ -1,0 +1,427 @@
+<!DOCTYPE html>
+<html lang="vi"
+      xmlns:th="http://www.thymeleaf.org"
+      xmlns:layout="http://www.ultraq.net.nz/thymeleaf/layout"
+      layout:decorate="~{layout/base-portal}">
+<head>
+    <title>Quản lý &amp; Đối soát COD</title>
+</head>
+<body>
+<h5 layout:fragment="page-title"><i class="bi bi-receipt-cutoff me-2"></i>Quản lý &amp; Duyệt Đối soát COD</h5>
+
+<div layout:fragment="content">
+    <!-- 4 KPI Cards -->
+    <div class="row row-cols-1 row-cols-sm-2 row-cols-xl-4 g-3 mb-4">
+        <div class="col">
+            <div class="card h-100">
+                <div class="card-body">
+                    <div class="small text-muted fw-semibold text-uppercase">Khách chờ lập phiếu</div>
+                    <div class="fs-2 fw-bold font-mono text-primary mt-1" th:text="${readyCustomerCount}">0</div>
+                    <div class="small text-muted">Có đơn <span class="font-mono">COLLECTED_BY_HUB</span> chưa đối soát</div>
+                </div>
+            </div>
+        </div>
+        <div class="col">
+            <div class="card h-100 border-warning-subtle">
+                <div class="card-body">
+                    <div class="small text-muted fw-semibold text-uppercase">Thực chuyển chờ lập phiếu</div>
+                    <div class="fs-4 fw-bold money-mono mt-1" style="color: #EA580C;"
+                         th:text="${#numbers.formatDecimal(readyNetTotal, 1, 'POINT', 0, 'COMMA') + ' đ'}">0 đ</div>
+                    <div class="small text-muted">Đã tự động cấn trừ cước chưa trả</div>
+                </div>
+            </div>
+        </div>
+        <div class="col">
+            <div class="card h-100">
+                <div class="card-body">
+                    <div class="small text-muted fw-semibold text-uppercase">Phiếu chờ chuyển khoản</div>
+                    <div class="fs-4 fw-bold money-mono text-warning-emphasis mt-1"
+                         th:text="${#numbers.formatDecimal(pendingSettlementNetTotal, 1, 'POINT', 0, 'COMMA') + ' đ'}">0 đ</div>
+                    <div class="small text-muted">
+                        <strong th:text="${pendingSettlementCount}">0</strong> phiếu trạng thái Chờ chuyển khoản
+                    </div>
+                </div>
+            </div>
+        </div>
+        <div class="col">
+            <div class="card h-100">
+                <div class="card-body">
+                    <div class="small text-muted fw-semibold text-uppercase">Tổng COD đã thanh toán</div>
+                    <div class="fs-4 fw-bold money-mono text-success mt-1"
+                         th:text="${#numbers.formatDecimal(settledNetTotal, 1, 'POINT', 0, 'COMMA') + ' đ'}">0 đ</div>
+                    <div class="small text-muted">Đã hoàn tất chuyển khoản cho khách</div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- ==================== SECTION 1: CUSTOMERS READY FOR SETTLEMENT ==================== -->
+    <div class="card mb-4 shadow-sm">
+        <div class="card-header py-3 d-flex flex-wrap align-items-center justify-content-between gap-2">
+            <div class="d-flex align-items-center gap-2">
+                <i class="bi bi-person-lines-fill text-primary fs-5"></i>
+                <span class="fw-bold text-primary">1. Khách hàng có đơn sẵn sàng đối soát COD</span>
+                <span class="badge rounded-pill bg-primary-subtle text-primary"
+                      th:text="${readyCustomerCount + ' khách hàng'}">0 khách hàng</span>
+            </div>
+            <span class="small text-muted">
+                Công thức (BR-09): <strong>Thực chuyển = Tổng COD − Cước Người gửi trả chưa thanh toán</strong>
+            </span>
+        </div>
+
+        <div th:if="${#lists.isEmpty(readyCustomers)}" class="card-body text-center py-4 text-muted">
+            <i class="bi bi-check2-all text-success fs-2 d-block mb-2"></i>
+            <div class="fw-semibold text-dark">Hiện không có khách hàng nào chờ tạo phiếu đối soát COD</div>
+            <div class="small">Vận đơn cần ở trạng thái <code>DELIVERED</code> và đã được bưu cục thu tiền từ Shipper (<code>COLLECTED_BY_HUB</code>).</div>
+        </div>
+
+        <div th:unless="${#lists.isEmpty(readyCustomers)}" class="card-body d-flex flex-column gap-3">
+            <div th:each="c, cStat : ${readyCustomers}" class="border rounded-3 p-3 bg-light bg-opacity-50">
+                <div class="row g-3 align-items-center">
+                    <!-- Customer & Bank Info -->
+                    <div class="col-lg-4">
+                        <div class="fw-bold text-primary fs-6" th:text="${c.customerName()}">Shop Hoàng Nam Tech</div>
+                        <div class="small text-muted mb-2">
+                            <span th:text="${c.customerEmail()}">shop@uteexpress.vn</span>
+                            • <strong class="text-dark" th:text="${#lists.size(c.shipments()) + ' vận đơn'}">2 vận đơn</strong>
+                        </div>
+                        <div class="small bg-white border rounded p-2">
+                            <div class="text-muted fw-semibold mb-1"><i class="bi bi-bank me-1 text-primary"></i>Tài khoản ngân hàng nhận COD</div>
+                            <div th:if="${c.bankAccountNumber() != null and !#strings.isEmpty(c.bankAccountNumber())}">
+                                <div class="fw-semibold text-dark" th:text="${c.bankName()}">Vietcombank</div>
+                                <div class="font-mono text-primary fw-bold" th:text="${c.bankAccountNumber()}">1023456789</div>
+                                <div class="text-uppercase small text-secondary" th:text="${c.bankAccountHolder()}">HOANG VAN NAM</div>
+                            </div>
+                            <div th:if="${c.bankAccountNumber() == null or #strings.isEmpty(c.bankAccountNumber())}"
+                                 class="text-danger small">
+                                <i class="bi bi-exclamation-triangle-fill me-1"></i>Khách hàng chưa cập nhật tài khoản ngân hàng
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Financial Breakdown -->
+                    <div class="col-lg-4">
+                        <div class="bg-white border rounded p-3 small">
+                            <div class="d-flex justify-content-between py-1 border-bottom">
+                                <span class="text-muted">Tổng tiền COD thu hộ:</span>
+                                <span class="money-mono fw-bold text-dark"
+                                      th:text="${#numbers.formatDecimal(c.totalCodAmount(), 1, 'POINT', 0, 'COMMA') + ' đ'}">500.000 đ</span>
+                            </div>
+                            <div class="d-flex justify-content-between py-1 border-bottom">
+                                <span class="text-muted">Cấn trừ cước chưa trả:</span>
+                                <span class="money-mono fw-semibold"
+                                      th:classappend="${c.totalShippingDeduction().signum() > 0} ? 'text-danger' : 'text-muted'"
+                                      th:text="${(c.totalShippingDeduction().signum() > 0 ? '− ' : '') + #numbers.formatDecimal(c.totalShippingDeduction(), 1, 'POINT', 0, 'COMMA') + ' đ'}">− 30.000 đ</span>
+                            </div>
+                            <div class="d-flex justify-content-between pt-2 align-items-center">
+                                <span class="fw-bold text-uppercase text-primary">Thực chuyển:</span>
+                                <span class="money-mono fw-bold fs-5" style="color: #EA580C;"
+                                      th:text="${#numbers.formatDecimal(c.netAmount(), 1, 'POINT', 0, 'COMMA') + ' đ'}">470.000 đ</span>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Create Settlement Form -->
+                    <div class="col-lg-4">
+                        <form th:action="@{/admin/cod-settlements}" method="post" class="d-flex flex-column gap-2">
+                            <input type="hidden" name="customerId" th:value="${c.customerId()}">
+                            <input type="text"
+                                   name="note"
+                                   class="form-control form-control-sm"
+                                   placeholder="Ghi chú phiên đối soát (VD: Đối soát đợt tuần 3)...">
+                            <div class="d-flex gap-2">
+                                <button type="button"
+                                        class="btn btn-outline-primary btn-sm flex-shrink-0"
+                                        data-bs-toggle="collapse"
+                                        th:attr="data-bs-target='#readyOrders-' + ${c.customerId()}">
+                                    <i class="bi bi-list-ul me-1"></i>Xem <span th:text="${#lists.size(c.shipments())}">0</span> đơn
+                                </button>
+                                <button type="submit" class="btn btn-ute-orange btn-sm flex-grow-1"
+                                        onclick="return confirm('Xác nhận tạo phiếu đối soát COD cho khách hàng này?');">
+                                    <i class="bi bi-file-earmark-plus-fill me-1"></i>Tạo phiếu đối soát COD
+                                </button>
+                            </div>
+                        </form>
+                    </div>
+                </div>
+
+                <!-- Collapsible Eligible Shipments Preview -->
+                <div class="collapse mt-3" th:id="'readyOrders-' + ${c.customerId()}">
+                    <div class="table-responsive bg-white border rounded">
+                        <table class="table table-sm table-hover align-middle mb-0 small">
+                            <thead class="table-light">
+                            <tr>
+                                <th>Mã vận đơn</th>
+                                <th>Người nhận</th>
+                                <th>Ngày giao</th>
+                                <th class="text-end">Tiền COD</th>
+                                <th>Thanh toán cước</th>
+                                <th class="text-end">Cước cấn trừ</th>
+                            </tr>
+                            </thead>
+                            <tbody>
+                            <tr th:each="sh : ${c.shipments()}"
+                                th:with="deductible=${sh.payerType != null and sh.payerType.name() == 'SENDER' and sh.paymentStatus != null and sh.paymentStatus.name() == 'UNPAID'}">
+                                <td>
+                                    <a th:href="@{/staff/shipments/{id}(id=${sh.id})}"
+                                       class="tracking-code fw-bold text-primary text-decoration-none"
+                                       th:text="${sh.trackingCode}">UTE...</a>
+                                </td>
+                                <td th:text="${sh.receiverName}">Vũ Ngọc Mai</td>
+                                <td class="font-mono text-muted"
+                                    th:text="${sh.deliveredAt != null ? #temporals.format(sh.deliveredAt, 'dd/MM/yyyy HH:mm') : '—'}"></td>
+                                <td class="text-end money-mono fw-semibold"
+                                    th:text="${#numbers.formatDecimal(sh.codAmount != null ? sh.codAmount : 0, 1, 'POINT', 0, 'COMMA') + ' đ'}">400.000 đ</td>
+                                <td>
+                                    <span th:text="${sh.payerType != null ? sh.payerType.label : ''}"></span> •
+                                    <span class="badge"
+                                          th:classappend="${sh.paymentStatus != null and sh.paymentStatus.name() == 'PAID'} ? 'bg-success-subtle text-success' : 'bg-warning-subtle text-warning-emphasis'"
+                                          th:text="${sh.paymentStatus != null ? sh.paymentStatus.label : ''}"></span>
+                                </td>
+                                <td class="text-end money-mono"
+                                    th:classappend="${deductible} ? 'text-danger fw-bold' : 'text-muted'"
+                                    th:text="${deductible ? ('− ' + #numbers.formatDecimal(sh.totalFee != null ? sh.totalFee : 0, 1, 'POINT', 0, 'COMMA') + ' đ') : '0 đ'}">0 đ</td>
+                            </tr>
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- ==================== SECTION 2: ALL COD SETTLEMENTS ==================== -->
+    <div class="card shadow-sm">
+        <div class="card-header py-3 d-flex flex-wrap align-items-center justify-content-between gap-2">
+            <div class="d-flex align-items-center gap-2">
+                <i class="bi bi-journal-check text-primary fs-5"></i>
+                <span class="fw-bold text-primary">2. Danh sách Phiếu Đối soát COD</span>
+                <span class="badge rounded-pill bg-secondary-subtle text-secondary"
+                      th:text="${#lists.size(settlements) + ' phiếu'}">0 phiếu</span>
+            </div>
+        </div>
+
+        <div th:if="${#lists.isEmpty(settlements)}" class="card-body text-center py-5 text-muted">
+            <i class="bi bi-receipt display-5 opacity-50 d-block mb-2"></i>
+            <div>Chưa có phiếu đối soát COD nào được tạo.</div>
+        </div>
+
+        <div th:unless="${#lists.isEmpty(settlements)}" class="table-responsive">
+            <table class="table table-hover align-middle mb-0">
+                <thead class="table-light">
+                <tr>
+                    <th>Mã phiếu / Ngày lập</th>
+                    <th>Khách hàng &amp; Ngân hàng</th>
+                    <th class="text-end">Tổng COD</th>
+                    <th class="text-end">Cấn trừ cước</th>
+                    <th class="text-end">Thực chuyển</th>
+                    <th>Trạng thái &amp; Mã GD</th>
+                    <th class="text-end">Thao tác</th>
+                </tr>
+                </thead>
+                <tbody>
+                <th:block th:each="view : ${settlements}" th:with="st=${view.settlement()}, orders=${view.shipments()}">
+                    <tr>
+                        <td>
+                            <div class="font-mono fw-bold text-primary" th:text="${st.settlementCode}">COD261120A1B2</div>
+                            <div class="small font-mono text-muted"
+                                 th:text="${st.createdAt != null ? #temporals.format(st.createdAt, 'dd/MM/yyyy HH:mm') : '—'}">20/11/2026 10:00</div>
+                            <span class="badge bg-light text-secondary border small mt-1"
+                                  th:text="${#lists.size(orders) + ' vận đơn'}">2 vận đơn</span>
+                        </td>
+                        <td>
+                            <div class="fw-semibold" th:text="${st.customer != null ? st.customer.fullName : '—'}">Shop Hoàng Nam</div>
+                            <div class="small text-muted" th:if="${st.bankAccountNumber != null and !#strings.isEmpty(st.bankAccountNumber)}">
+                                <i class="bi bi-bank me-1"></i>
+                                <span th:text="${st.bankName}">Vietcombank</span> •
+                                <span class="font-mono fw-semibold text-dark" th:text="${st.bankAccountNumber}">1023456789</span>
+                                (<span th:text="${st.bankAccountHolder}">HOANG VAN NAM</span>)
+                            </div>
+                            <div class="small text-muted fst-italic" th:if="${st.note != null and !#strings.isEmpty(st.note)}">
+                                Ghi chú: <span th:text="${st.note}"></span>
+                            </div>
+                        </td>
+                        <td class="text-end money-mono fw-semibold"
+                            th:text="${#numbers.formatDecimal(st.totalCodAmount, 1, 'POINT', 0, 'COMMA') + ' đ'}">500.000 đ</td>
+                        <td class="text-end money-mono"
+                            th:classappend="${st.totalShippingDeduction != null and st.totalShippingDeduction.signum() > 0} ? 'text-danger fw-semibold' : 'text-muted'"
+                            th:text="${(st.totalShippingDeduction != null and st.totalShippingDeduction.signum() > 0 ? '− ' : '') + #numbers.formatDecimal(st.totalShippingDeduction != null ? st.totalShippingDeduction : 0, 1, 'POINT', 0, 'COMMA') + ' đ'}">− 30.000 đ</td>
+                        <td class="text-end money-mono fw-bold" style="color: #EA580C;"
+                            th:text="${#numbers.formatDecimal(st.netAmount, 1, 'POINT', 0, 'COMMA') + ' đ'}">470.000 đ</td>
+                        <td>
+                            <span th:if="${st.status.name() == 'SETTLED'}"
+                                  class="badge bg-success-subtle text-success rounded-pill px-2 py-1">
+                                <i class="bi bi-check-circle-fill me-1"></i>Đã thanh toán
+                            </span>
+                            <span th:if="${st.status.name() == 'PENDING'}"
+                                  class="badge bg-warning-subtle text-warning-emphasis rounded-pill px-2 py-1">
+                                <i class="bi bi-clock-fill me-1"></i>Chờ chuyển khoản
+                            </span>
+                            <div class="small font-mono text-dark mt-1"
+                                 th:if="${st.transactionRef != null and !#strings.isEmpty(st.transactionRef)}">
+                                Mã GD: <strong th:text="${st.transactionRef}">VCB123456</strong>
+                            </div>
+                            <div class="small font-mono text-muted" th:if="${st.settledAt != null}"
+                                 th:text="${#temporals.format(st.settledAt, 'dd/MM/yyyy HH:mm')}"></div>
+                        </td>
+                        <td class="text-end text-nowrap">
+                            <button type="button"
+                                    class="btn btn-outline-primary btn-sm me-1"
+                                    data-bs-toggle="collapse"
+                                    th:attr="data-bs-target='#settlementOrders-' + ${st.id}">
+                                <i class="bi bi-eye me-1"></i>Chi tiết
+                            </button>
+                            <button th:if="${st.status.name() == 'PENDING'}"
+                                    type="button"
+                                    class="btn btn-success btn-sm"
+                                    data-bs-toggle="modal"
+                                    data-bs-target="#settleCodModal"
+                                    th:attr="data-settlement-id=${st.id},
+                                             data-settlement-code=${st.settlementCode},
+                                             data-customer-name=${st.customer != null ? st.customer.fullName : ''},
+                                             data-net-amount=${#numbers.formatDecimal(st.netAmount, 1, 'POINT', 0, 'COMMA') + ' đ'},
+                                             data-bank-info=${(st.bankName != null ? st.bankName : 'Chưa có') + ' — ' + (st.bankAccountNumber != null ? st.bankAccountNumber : '—') + ' (' + (st.bankAccountHolder != null ? st.bankAccountHolder : '—') + ')'}"
+                                    onclick="openSettleModal(this)">
+                                <i class="bi bi-check2-circle me-1"></i>Xác nhận đã chuyển khoản
+                            </button>
+                        </td>
+                    </tr>
+                    <!-- Expandable Detail Row -->
+                    <tr class="collapse bg-light" th:id="'settlementOrders-' + ${st.id}">
+                        <td colspan="7" class="p-3">
+                            <div class="small fw-bold text-primary mb-2">
+                                <i class="bi bi-box-seam me-1"></i>Danh sách vận đơn trong phiếu
+                                <span class="font-mono" th:text="${st.settlementCode}"></span>
+                            </div>
+                            <div class="table-responsive bg-white border rounded">
+                                <table class="table table-sm align-middle mb-0 small">
+                                    <thead class="table-light">
+                                    <tr>
+                                        <th>Mã vận đơn</th>
+                                        <th>Người nhận</th>
+                                        <th>Ngày giao</th>
+                                        <th class="text-end">Tiền COD</th>
+                                        <th class="text-end">Tổng cước</th>
+                                        <th>Người trả / TT Cước</th>
+                                        <th>Trạng thái COD</th>
+                                    </tr>
+                                    </thead>
+                                    <tbody>
+                                    <tr th:each="sh : ${orders}">
+                                        <td>
+                                            <a th:href="@{/staff/shipments/{id}(id=${sh.id})}"
+                                               class="tracking-code fw-bold text-primary text-decoration-none"
+                                               th:text="${sh.trackingCode}">UTE...</a>
+                                        </td>
+                                        <td th:text="${sh.receiverName}"></td>
+                                        <td class="font-mono text-muted"
+                                            th:text="${sh.deliveredAt != null ? #temporals.format(sh.deliveredAt, 'dd/MM/yyyy HH:mm') : '—'}"></td>
+                                        <td class="text-end money-mono fw-semibold"
+                                            th:text="${#numbers.formatDecimal(sh.codAmount != null ? sh.codAmount : 0, 1, 'POINT', 0, 'COMMA') + ' đ'}"></td>
+                                        <td class="text-end money-mono"
+                                            th:text="${#numbers.formatDecimal(sh.totalFee != null ? sh.totalFee : 0, 1, 'POINT', 0, 'COMMA') + ' đ'}"></td>
+                                        <td>
+                                            <span th:text="${sh.payerType != null ? sh.payerType.label : ''}"></span> •
+                                            <span class="badge bg-secondary-subtle text-secondary"
+                                                  th:text="${sh.paymentStatus != null ? sh.paymentStatus.label : ''}"></span>
+                                        </td>
+                                        <td>
+                                            <span class="badge bg-info-subtle text-info-emphasis"
+                                                  th:text="${sh.codStatus != null ? sh.codStatus.label : ''}"></span>
+                                        </td>
+                                    </tr>
+                                    </tbody>
+                                </table>
+                            </div>
+                        </td>
+                    </tr>
+                </th:block>
+                </tbody>
+            </table>
+        </div>
+    </div>
+
+    <!-- Modal: Confirm Bank Transfer (PENDING -> SETTLED) -->
+    <div class="modal fade" id="settleCodModal" tabindex="-1" aria-hidden="true">
+        <div class="modal-dialog modal-dialog-centered">
+            <form id="settleCodForm" method="post" class="modal-content">
+                <div class="modal-header bg-success-subtle">
+                    <h5 class="modal-title fw-bold text-success">
+                        <i class="bi bi-bank2 me-2"></i>Xác nhận đã chuyển khoản COD
+                    </h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+                </div>
+                <div class="modal-body">
+                    <div class="bg-light border rounded p-3 mb-3 small">
+                        <div class="d-flex justify-content-between mb-1">
+                            <span class="text-muted">Mã phiếu đối soát:</span>
+                            <strong id="modalSettlementCode" class="font-mono text-primary">COD...</strong>
+                        </div>
+                        <div class="d-flex justify-content-between mb-1">
+                            <span class="text-muted">Khách hàng:</span>
+                            <strong id="modalCustomerName">—</strong>
+                        </div>
+                        <div class="d-flex justify-content-between mb-1">
+                            <span class="text-muted">Số tiền thực chuyển:</span>
+                            <strong id="modalNetAmount" class="money-mono fs-6" style="color: #EA580C;">0 đ</strong>
+                        </div>
+                        <div class="pt-2 mt-2 border-top">
+                            <div class="text-muted">Tài khoản nhận tiền:</div>
+                            <div id="modalBankInfo" class="fw-semibold text-dark font-mono"></div>
+                        </div>
+                    </div>
+
+                    <div class="mb-2">
+                        <label for="transactionRefInput" class="form-label fw-semibold">
+                            Mã giao dịch chuyển khoản tham chiếu <span class="text-danger">*</span>
+                        </label>
+                        <input type="text"
+                               id="transactionRefInput"
+                               name="transactionRef"
+                               class="form-control font-mono"
+                               placeholder="VD: FT263249812345 / VCB-20112026-001"
+                               maxlength="100"
+                               required>
+                        <div class="form-text">
+                            Sau khi xác nhận, toàn bộ vận đơn trong phiếu sẽ chuyển sang trạng thái <strong>Đã đối soát</strong> và gửi thông báo realtime cho khách hàng.
+                        </div>
+                    </div>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-light" data-bs-dismiss="modal">Đóng</button>
+                    <button type="submit" class="btn btn-success fw-semibold">
+                        <i class="bi bi-check-circle-fill me-1"></i>Xác nhận đã chuyển khoản
+                    </button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+
+<th:block layout:fragment="scripts">
+    <script>
+        function openSettleModal(btn) {
+            const id = btn.getAttribute('data-settlement-id');
+            const code = btn.getAttribute('data-settlement-code') || '';
+            const customerName = btn.getAttribute('data-customer-name') || '';
+            const netAmount = btn.getAttribute('data-net-amount') || '0 đ';
+            const bankInfo = btn.getAttribute('data-bank-info') || '';
+
+            const form = document.getElementById('settleCodForm');
+            if (form && id) {
+                form.action = '/admin/cod-settlements/' + id + '/settle';
+            }
+            document.getElementById('modalSettlementCode').textContent = code;
+            document.getElementById('modalCustomerName').textContent = customerName;
+            document.getElementById('modalNetAmount').textContent = netAmount;
+            document.getElementById('modalBankInfo').textContent = bankInfo;
+            const refInput = document.getElementById('transactionRefInput');
+            if (refInput) {
+                refInput.value = '';
+                setTimeout(function () { refInput.focus(); }, 250);
+            }
+        }
+    </script>
+</th:block>
+</body>
+</html>

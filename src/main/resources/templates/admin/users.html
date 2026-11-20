@@ -1,0 +1,172 @@
+<!DOCTYPE html>
+<html lang="vi"
+      xmlns:th="http://www.thymeleaf.org"
+      xmlns:layout="http://www.ultraq.net.nz/thymeleaf/layout"
+      layout:decorate="~{layout/base-portal}">
+<head>
+    <title>Quản lý Tài khoản & Nhân sự</title>
+</head>
+<body>
+<h5 layout:fragment="page-title"><i class="bi bi-people me-2"></i>Quản lý Tài khoản & Gán Bưu cục</h5>
+
+<div layout:fragment="content">
+    <!-- Filter & Add User -->
+    <div class="card mb-3">
+        <div class="card-body">
+            <form th:action="@{/admin/users}" method="get" class="row g-2 align-items-end">
+                <div class="col-md-3">
+                    <label class="form-label small fw-semibold mb-1">Vai trò</label>
+                    <select name="role" class="form-select form-select-sm">
+                        <option value="">Tất cả vai trò</option>
+                        <option th:each="r : ${roles}" th:value="${r.name()}" th:text="${r.label}"
+                                th:selected="${selectedRole != null and selectedRole == r}"></option>
+                    </select>
+                </div>
+                <div class="col-md-3">
+                    <label class="form-label small fw-semibold mb-1">Bưu cục trực thuộc</label>
+                    <select name="hubId" class="form-select form-select-sm">
+                        <option value="">Tất cả bưu cục</option>
+                        <option th:each="h : ${allHubs}" th:value="${h.id}"
+                                th:text="${h.code + ' — ' + h.name}"
+                                th:selected="${selectedHubId != null and selectedHubId == h.id}"></option>
+                    </select>
+                </div>
+                <div class="col-md-3">
+                    <label class="form-label small fw-semibold mb-1">Tìm kiếm</label>
+                    <input type="text" name="keyword" th:value="${keyword}" class="form-control form-control-sm"
+                           placeholder="Tên, email hoặc SĐT...">
+                </div>
+                <div class="col-md-3 d-flex gap-2 justify-content-end">
+                    <button type="submit" class="btn btn-ute-navy btn-sm"><i class="bi bi-funnel me-1"></i>Lọc</button>
+                    <button type="button" class="btn btn-ute-orange btn-sm" data-bs-toggle="modal" data-bs-target="#createUserModal">
+                        <i class="bi bi-person-plus me-1"></i>Tạo Nhân sự
+                    </button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <!-- Users Table -->
+    <div class="card">
+        <div class="table-responsive">
+            <table class="table table-hover align-middle mb-0">
+                <thead class="table-light">
+                <tr>
+                    <th>Họ tên</th>
+                    <th>Email & SĐT</th>
+                    <th>Vai trò</th>
+                    <th>Bưu cục trực thuộc</th>
+                    <th>Trạng thái</th>
+                    <th class="text-end">Thao tác</th>
+                </tr>
+                </thead>
+                <tbody>
+                <tr th:each="u : ${users}">
+                    <td class="fw-semibold" th:text="${u.fullName}">Thu Hà</td>
+                    <td>
+                        <div class="small" th:text="${u.email}">staff.hcm@uteexpress.vn</div>
+                        <small class="text-muted font-mono" th:text="${u.phone}">0901000002</small>
+                    </td>
+                    <td>
+                        <span class="badge bg-primary-subtle text-primary" th:text="${u.role.label}">Nhân viên</span>
+                    </td>
+                    <td>
+                        <span th:if="${u.hub != null}" class="font-mono small" th:text="${u.hub.code + ' — ' + u.hub.name}">HCM-TD01</span>
+                        <span th:if="${u.hub == null}" class="text-muted small">—</span>
+                    </td>
+                    <td>
+                        <span th:if="${u.status.name() == 'ACTIVE'}" class="badge bg-success-subtle text-success">Đang hoạt động</span>
+                        <span th:if="${u.status.name() == 'LOCKED'}" class="badge bg-danger-subtle text-danger">Đã khóa</span>
+                    </td>
+                    <td class="text-end">
+                        <form th:action="@{/admin/users/{id}/toggle-status(id=${u.id})}" method="post" class="d-inline"
+                              onsubmit="return confirm('Xác nhận thay đổi trạng thái khóa/mở khóa tài khoản này?');">
+                            <button type="submit" class="btn btn-sm"
+                                    th:classappend="${u.status.name() == 'ACTIVE'} ? 'btn-outline-danger' : 'btn-outline-success'">
+                                <i class="bi" th:classappend="${u.status.name() == 'ACTIVE'} ? 'bi-lock' : 'bi-unlock'"></i>
+                                <span th:text="${u.status.name() == 'ACTIVE'} ? 'Khóa' : 'Mở khóa'"></span>
+                            </button>
+                        </form>
+                    </td>
+                </tr>
+                <tr th:if="${#lists.isEmpty(users)}">
+                    <td colspan="6" class="text-center py-4 text-muted">Không tìm thấy tài khoản phù hợp với điều kiện lọc.</td>
+                </tr>
+                </tbody>
+            </table>
+        </div>
+    </div>
+
+    <!-- Create Staff / Shipper Modal -->
+    <div class="modal fade" id="createUserModal" tabindex="-1">
+        <div class="modal-dialog">
+            <form th:action="@{/admin/users}" method="post" class="modal-content">
+                <div class="modal-header">
+                    <h5 class="modal-title fw-bold text-primary">Tạo tài khoản Nhân viên / Shipper</h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+                </div>
+                <div class="modal-body">
+                    <div class="mb-3">
+                        <label class="form-label fw-semibold">Họ và tên</label>
+                        <input type="text" name="fullName" class="form-control" required>
+                    </div>
+                    <div class="row g-3 mb-3">
+                        <div class="col-md-6">
+                            <label class="form-label fw-semibold">Email</label>
+                            <input type="email" name="email" class="form-control" required>
+                        </div>
+                        <div class="col-md-6">
+                            <label class="form-label fw-semibold">Số điện thoại</label>
+                            <input type="text" name="phone" class="form-control" placeholder="090xxxxxxx" required>
+                        </div>
+                    </div>
+                    <div class="mb-3">
+                        <label class="form-label fw-semibold">Mật khẩu khởi tạo</label>
+                        <input type="password" name="password" class="form-control" minlength="6" required>
+                    </div>
+                    <div class="row g-3">
+                        <div class="col-md-5">
+                            <label class="form-label fw-semibold">Vai trò</label>
+                            <select name="role" id="newUserRole" class="form-select" onchange="toggleHubRequired()" required>
+                                <option value="STAFF">Nhân viên Bưu cục (STAFF)</option>
+                                <option value="SHIPPER">Giao nhận (SHIPPER)</option>
+                                <option value="ADMIN">Quản trị viên (ADMIN)</option>
+                            </select>
+                        </div>
+                        <div class="col-md-7" id="newUserHubWrapper">
+                            <label class="form-label fw-semibold">Bưu cục trực thuộc (*)</label>
+                            <select name="hubId" id="newUserHubId" class="form-select" required>
+                                <option value="">-- Chọn Bưu cục --</option>
+                                <option th:each="h : ${hubs}" th:value="${h.id}" th:text="${h.code + ' — ' + h.name}"></option>
+                            </select>
+                        </div>
+                    </div>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-light" data-bs-dismiss="modal">Hủy</button>
+                    <button type="submit" class="btn btn-ute-orange"><i class="bi bi-person-check me-1"></i>Tạo tài khoản</button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+
+<th:block layout:fragment="scripts">
+    <script>
+        function toggleHubRequired() {
+            const role = document.getElementById('newUserRole').value;
+            const hubSelect = document.getElementById('newUserHubId');
+            const wrapper = document.getElementById('newUserHubWrapper');
+            if (role === 'ADMIN') {
+                hubSelect.required = false;
+                hubSelect.value = '';
+                wrapper.classList.add('opacity-50');
+            } else {
+                hubSelect.required = true;
+                wrapper.classList.remove('opacity-50');
+            }
+        }
+    </script>
+</th:block>
+</body>
+</html>

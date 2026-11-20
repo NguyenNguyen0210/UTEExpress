@@ -1,0 +1,69 @@
+<!DOCTYPE html>
+<html lang="vi"
+      xmlns:th="http://www.thymeleaf.org"
+      xmlns:layout="http://www.ultraq.net.nz/thymeleaf/layout"
+      layout:decorate="~{layout/base-public}">
+<head>
+    <title>Đăng nhập hệ thống</title>
+</head>
+<body>
+<div layout:fragment="content" class="container py-5">
+    <div class="row justify-content-center">
+        <div class="col-md-6 col-lg-5">
+            <div class="card shadow-sm border-0">
+                <div class="card-body p-4 p-md-5">
+                    <div class="text-center mb-4">
+                        <i class="bi bi-box-seam-fill text-warning fs-1"></i>
+                        <h3 class="fw-bold text-primary mt-2">Đăng nhập UTEExpress</h3>
+                        <p class="text-muted small">Đăng nhập cổng Khách hàng, Nhân viên Bưu cục, Shipper hoặc Quản trị</p>
+                    </div>
+
+                    <form th:action="@{/auth/login}" th:object="${loginRequest}" method="post">
+                        <div class="mb-3">
+                            <label for="email" class="form-label fw-semibold">Email đăng nhập</label>
+                            <div class="input-group">
+                                <span class="input-group-text bg-light"><i class="bi bi-envelope"></i></span>
+                                <input type="email" id="email" th:field="*{email}" class="form-control"
+                                       placeholder="shop@uteexpress.vn" required autofocus>
+                            </div>
+                            <div class="text-danger small mt-1" th:if="${#fields.hasErrors('email')}" th:errors="*{email}"></div>
+                        </div>
+
+                        <div class="mb-4">
+                            <label for="password" class="form-label fw-semibold">Mật khẩu</label>
+                            <div class="input-group">
+                                <span class="input-group-text bg-light"><i class="bi bi-lock"></i></span>
+                                <input type="password" id="password" th:field="*{password}" class="form-control"
+                                       placeholder="••••••" required>
+                            </div>
+                            <div class="text-danger small mt-1" th:if="${#fields.hasErrors('password')}" th:errors="*{password}"></div>
+                        </div>
+
+                        <button type="submit" class="btn btn-ute-orange w-100 py-2">
+                            <i class="bi bi-box-arrow-in-right me-1"></i>Đăng nhập
+                        </button>
+                    </form>
+
+                    <div class="text-center mt-4 small">
+                        Chưa có tài khoản gửi hàng?
+                        <a th:href="@{/auth/register}" class="fw-semibold text-decoration-none text-primary">Đăng ký miễn phí ngay</a>
+                    </div>
+
+                    <hr class="my-4">
+                    <div class="bg-light rounded p-3 small">
+                        <div class="fw-semibold text-primary mb-2"><i class="bi bi-info-circle me-1"></i>Tài khoản Demo (mật khẩu: <code>123456</code>)</div>
+                        <div class="d-flex flex-column gap-1 font-mono" style="font-size: 0.78rem;">
+                            <div><strong>Admin:</strong> admin@uteexpress.vn</div>
+                            <div><strong>Staff HCM:</strong> staff.hcm@uteexpress.vn</div>
+                            <div><strong>Staff HN:</strong> staff.hn@uteexpress.vn</div>
+                            <div><strong>Shipper HCM:</strong> shipper.hcm@uteexpress.vn</div>
+                            <div><strong>Customer:</strong> shop@uteexpress.vn</div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+</body>
+</html>

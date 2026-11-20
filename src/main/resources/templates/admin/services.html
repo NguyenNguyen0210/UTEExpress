@@ -1,0 +1,169 @@
+<!DOCTYPE html>
+<html lang="vi"
+      xmlns:th="http://www.thymeleaf.org"
+      xmlns:layout="http://www.ultraq.net.nz/thymeleaf/layout"
+      layout:decorate="~{layout/base-portal}">
+<head>
+    <title>Quản lý Gói dịch vụ & Bảng giá</title>
+</head>
+<body>
+<h5 layout:fragment="page-title"><i class="bi bi-tags me-2"></i>Quản lý Gói dịch vụ & Bảng giá cước</h5>
+
+<div layout:fragment="content">
+    <div class="d-flex justify-content-between align-items-center mb-3">
+        <div class="text-muted small">Thay đổi bảng giá chỉ áp dụng cho vận đơn tạo mới về sau, không ảnh hưởng đơn đã tạo.</div>
+        <button type="button" class="btn btn-ute-orange btn-sm" data-bs-toggle="modal" data-bs-target="#serviceModal" onclick="resetServiceModal()">
+            <i class="bi bi-plus-lg me-1"></i>Thêm Gói dịch vụ
+        </button>
+    </div>
+
+    <div class="card">
+        <div class="table-responsive">
+            <table class="table table-hover align-middle mb-0">
+                <thead class="table-light">
+                <tr>
+                    <th>Mã gói</th>
+                    <th>Tên gói dịch vụ</th>
+                    <th class="text-end">Cước cơ bản</th>
+                    <th class="text-end">Vượt ngưỡng (/0.5kg)</th>
+                    <th class="text-end">Phụ phí liên tỉnh</th>
+                    <th class="text-end">Phí COD</th>
+                    <th>Thời gian dự kiến</th>
+                    <th>Trạng thái</th>
+                    <th class="text-end">Thao tác</th>
+                </tr>
+                </thead>
+                <tbody>
+                <tr th:each="svc : ${services}">
+                    <td><span class="badge bg-primary-subtle text-primary font-mono" th:text="${svc.code}">STANDARD</span></td>
+                    <td>
+                        <div class="fw-semibold" th:text="${svc.name}">Tiêu chuẩn</div>
+                        <small class="text-muted" th:text="${svc.description}"></small>
+                    </td>
+                    <td class="text-end font-mono">
+                        <span th:text="${#numbers.formatDecimal(svc.baseFee, 0, 'POINT', 0, 'COMMA') + ' đ'}">20.000 đ</span>
+                        <div class="small text-muted">≤ <span th:text="${svc.baseWeightKg}">1.00</span> kg</div>
+                    </td>
+                    <td class="text-end font-mono" th:text="${'+' + #numbers.formatDecimal(svc.extraFeePerHalfKg, 0, 'POINT', 0, 'COMMA') + ' đ'}">+5.000 đ</td>
+                    <td class="text-end font-mono" th:text="${'+' + #numbers.formatDecimal(svc.interProvinceSurcharge, 0, 'POINT', 0, 'COMMA') + ' đ'}">+10.000 đ</td>
+                    <td class="text-end font-mono" th:text="${svc.codFeePercent + '%'}">1.00%</td>
+                    <td th:text="${svc.estimatedDaysMin + ' - ' + svc.estimatedDaysMax + ' ngày'}">3 - 5 ngày</td>
+                    <td>
+                        <span th:if="${svc.active}" class="badge bg-success-subtle text-success">Đang mở</span>
+                        <span th:unless="${svc.active}" class="badge bg-secondary-subtle text-secondary">Tạm ẩn</span>
+                    </td>
+                    <td class="text-end">
+                        <button type="button" class="btn btn-outline-primary btn-sm me-1"
+                                th:attr="data-id=${svc.id},data-code=${svc.code},data-name=${svc.name},data-desc=${svc.description},data-basefee=${svc.baseFee},data-baseweight=${svc.baseWeightKg},data-extra=${svc.extraFeePerHalfKg},data-inter=${svc.interProvinceSurcharge},data-cod=${svc.codFeePercent},data-dmin=${svc.estimatedDaysMin},data-dmax=${svc.estimatedDaysMax}"
+                                onclick="editService(this)">
+                            <i class="bi bi-pencil"></i> Sửa
+                        </button>
+                        <form th:action="@{/admin/services/{id}/toggle-active(id=${svc.id})}" method="post" class="d-inline">
+                            <button type="submit" class="btn btn-sm"
+                                    th:classappend="${svc.active} ? 'btn-outline-danger' : 'btn-outline-success'"
+                                    th:text="${svc.active} ? 'Ẩn' : 'Mở'"></button>
+                        </form>
+                    </td>
+                </tr>
+                </tbody>
+            </table>
+        </div>
+    </div>
+
+    <!-- Service Modal -->
+    <div class="modal fade" id="serviceModal" tabindex="-1">
+        <div class="modal-dialog modal-lg">
+            <form th:action="@{/admin/services}" method="post" class="modal-content">
+                <div class="modal-header">
+                    <h5 class="modal-title fw-bold text-primary" id="serviceModalTitle">Thêm Gói dịch vụ</h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+                </div>
+                <div class="modal-body">
+                    <input type="hidden" name="id" id="svcId">
+                    <div class="row g-3">
+                        <div class="col-md-4">
+                            <label class="form-label fw-semibold">Mã gói</label>
+                            <input type="text" name="code" id="svcCode" class="form-control font-mono" placeholder="VD: ECONOMY" required>
+                        </div>
+                        <div class="col-md-8">
+                            <label class="form-label fw-semibold">Tên gói dịch vụ</label>
+                            <input type="text" name="name" id="svcName" class="form-control" required>
+                        </div>
+                        <div class="col-12">
+                            <label class="form-label fw-semibold">Mô tả ngắn</label>
+                            <input type="text" name="description" id="svcDesc" class="form-control">
+                        </div>
+                        <div class="col-md-4">
+                            <label class="form-label fw-semibold">Cước cơ bản (VNĐ)</label>
+                            <input type="number" name="baseFee" id="svcBaseFee" class="form-control" min="0" required>
+                        </div>
+                        <div class="col-md-4">
+                            <label class="form-label fw-semibold">Ngưỡng cân chuẩn (kg)</label>
+                            <input type="number" step="0.5" name="baseWeightKg" id="svcBaseWeight" class="form-control" value="1.00" min="0.5" required>
+                        </div>
+                        <div class="col-md-4">
+                            <label class="form-label fw-semibold">Đơn giá mỗi 0.5kg vượt (VNĐ)</label>
+                            <input type="number" name="extraFeePerHalfKg" id="svcExtra" class="form-control" min="0" required>
+                        </div>
+                        <div class="col-md-4">
+                            <label class="form-label fw-semibold">Phụ phí liên tỉnh (VNĐ)</label>
+                            <input type="number" name="interProvinceSurcharge" id="svcInter" class="form-control" value="0" min="0" required>
+                        </div>
+                        <div class="col-md-4">
+                            <label class="form-label fw-semibold">Phí thu hộ COD (%)</label>
+                            <input type="number" step="0.1" name="codFeePercent" id="svcCod" class="form-control" value="1.00" min="0" max="100" required>
+                        </div>
+                        <div class="col-md-2">
+                            <label class="form-label fw-semibold">Ngày min</label>
+                            <input type="number" name="estimatedDaysMin" id="svcDMin" class="form-control" value="1" min="0" required>
+                        </div>
+                        <div class="col-md-2">
+                            <label class="form-label fw-semibold">Ngày max</label>
+                            <input type="number" name="estimatedDaysMax" id="svcDMax" class="form-control" value="3" min="1" required>
+                        </div>
+                    </div>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-light" data-bs-dismiss="modal">Hủy</button>
+                    <button type="submit" class="btn btn-ute-navy"><i class="bi bi-save me-1"></i>Lưu bảng giá</button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+
+<th:block layout:fragment="scripts">
+    <script>
+        function resetServiceModal() {
+            document.getElementById('serviceModalTitle').textContent = 'Thêm Gói dịch vụ mới';
+            document.getElementById('svcId').value = '';
+            document.getElementById('svcCode').value = '';
+            document.getElementById('svcName').value = '';
+            document.getElementById('svcDesc').value = '';
+            document.getElementById('svcBaseFee').value = '20000';
+            document.getElementById('svcBaseWeight').value = '1.00';
+            document.getElementById('svcExtra').value = '5000';
+            document.getElementById('svcInter').value = '10000';
+            document.getElementById('svcCod').value = '1.00';
+            document.getElementById('svcDMin').value = '2';
+            document.getElementById('svcDMax').value = '4';
+        }
+        function editService(btn) {
+            document.getElementById('serviceModalTitle').textContent = 'Cập nhật gói ' + btn.dataset.code;
+            document.getElementById('svcId').value = btn.dataset.id;
+            document.getElementById('svcCode').value = btn.dataset.code;
+            document.getElementById('svcName').value = btn.dataset.name;
+            document.getElementById('svcDesc').value = btn.dataset.desc || '';
+            document.getElementById('svcBaseFee').value = btn.dataset.basefee;
+            document.getElementById('svcBaseWeight').value = btn.dataset.baseweight;
+            document.getElementById('svcExtra').value = btn.dataset.extra;
+            document.getElementById('svcInter').value = btn.dataset.inter;
+            document.getElementById('svcCod').value = btn.dataset.cod;
+            document.getElementById('svcDMin').value = btn.dataset.dmin;
+            document.getElementById('svcDMax').value = btn.dataset.dmax;
+            new bootstrap.Modal(document.getElementById('serviceModal')).show();
+        }
+    </script>
+</th:block>
+</body>
+</html>

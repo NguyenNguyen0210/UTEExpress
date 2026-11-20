@@ -1,0 +1,72 @@
+<!DOCTYPE html>
+<html lang="vi"
+      xmlns:th="http://www.thymeleaf.org"
+      xmlns:layout="http://www.ultraq.net.nz/thymeleaf/layout"
+      layout:decorate="~{layout/base-public}">
+<head>
+    <title>Đăng ký tài khoản Khách hàng</title>
+</head>
+<body>
+<div layout:fragment="content" class="container py-5">
+    <div class="row justify-content-center">
+        <div class="col-md-7 col-lg-6">
+            <div class="card shadow-sm border-0">
+                <div class="card-body p-4 p-md-5">
+                    <div class="text-center mb-4">
+                        <i class="bi bi-person-plus-fill text-warning fs-1"></i>
+                        <h3 class="fw-bold text-primary mt-2">Đăng ký Khách hàng / Chủ Shop</h3>
+                        <p class="text-muted small">Tạo đơn hàng, in tem PDF A6 và đối soát COD tự động cùng UTEExpress</p>
+                    </div>
+
+                    <form th:action="@{/auth/register}" th:object="${registerRequest}" method="post">
+                        <div class="mb-3">
+                            <label for="fullName" class="form-label fw-semibold">Họ và tên / Tên Shop</label>
+                            <input type="text" id="fullName" th:field="*{fullName}" class="form-control"
+                                   placeholder="VD: Shop Minh Quân Electronics" required>
+                            <div class="text-danger small mt-1" th:if="${#fields.hasErrors('fullName')}" th:errors="*{fullName}"></div>
+                        </div>
+
+                        <div class="row g-3 mb-3">
+                            <div class="col-md-6">
+                                <label for="email" class="form-label fw-semibold">Email</label>
+                                <input type="email" id="email" th:field="*{email}" class="form-control"
+                                       placeholder="tenban@gmail.com" required>
+                                <div class="text-danger small mt-1" th:if="${#fields.hasErrors('email')}" th:errors="*{email}"></div>
+                            </div>
+                            <div class="col-md-6">
+                                <label for="phone" class="form-label fw-semibold">Số điện thoại</label>
+                                <input type="text" id="phone" th:field="*{phone}" class="form-control"
+                                       placeholder="0901234567" required>
+                                <div class="text-danger small mt-1" th:if="${#fields.hasErrors('phone')}" th:errors="*{phone}"></div>
+                            </div>
+                        </div>
+
+                        <div class="row g-3 mb-4">
+                            <div class="col-md-6">
+                                <label for="password" class="form-label fw-semibold">Mật khẩu (≥ 6 ký tự)</label>
+                                <input type="password" id="password" th:field="*{password}" class="form-control" required>
+                                <div class="text-danger small mt-1" th:if="${#fields.hasErrors('password')}" th:errors="*{password}"></div>
+                            </div>
+                            <div class="col-md-6">
+                                <label for="confirmPassword" class="form-label fw-semibold">Xác nhận mật khẩu</label>
+                                <input type="password" id="confirmPassword" th:field="*{confirmPassword}" class="form-control" required>
+                                <div class="text-danger small mt-1" th:if="${#fields.hasErrors('confirmPassword')}" th:errors="*{confirmPassword}"></div>
+                            </div>
+                        </div>
+
+                        <button type="submit" class="btn btn-ute-orange w-100 py-2">
+                            <i class="bi bi-check-circle me-1"></i>Tạo tài khoản ngay
+                        </button>
+                    </form>
+
+                    <div class="text-center mt-4 small">
+                        Đã có tài khoản?
+                        <a th:href="@{/auth/login}" class="fw-semibold text-decoration-none text-primary">Đăng nhập tại đây</a>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+</body>
+</html>

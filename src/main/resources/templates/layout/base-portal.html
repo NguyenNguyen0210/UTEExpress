@@ -109,8 +109,13 @@
                 <!-- Authenticated User Info -->
                 <div class="d-flex align-items-center gap-2" sec:authorize="isAuthenticated()">
                     <div class="text-end d-none d-sm-block">
-                        <div class="fw-semibold small" sec:authentication="name">user@uteexpress.vn</div>
-                        <span class="badge bg-primary-subtle text-primary small" sec:authentication="authorities">ROLE</span>
+                        <div class="fw-semibold small" th:text="${#authentication.principal.fullName}">Người dùng</div>
+                        <div class="d-flex align-items-center justify-content-end gap-1">
+                            <span class="badge bg-primary-subtle text-primary small" th:text="${#authentication.principal.role.label}">Vai trò</span>
+                            <span class="badge bg-warning-subtle text-warning-emphasis small font-mono"
+                                  th:if="${#authentication.principal.hubCode != null}"
+                                  th:text="${#authentication.principal.hubCode}">HCM-TD01</span>
+                        </div>
                     </div>
                     <form th:action="@{/auth/logout}" method="post" class="m-0">
                         <button type="submit" class="btn btn-outline-danger btn-sm" title="Đăng xuất">

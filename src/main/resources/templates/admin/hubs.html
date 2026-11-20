@@ -1,0 +1,154 @@
+<!DOCTYPE html>
+<html lang="vi"
+      xmlns:th="http://www.thymeleaf.org"
+      xmlns:layout="http://www.ultraq.net.nz/thymeleaf/layout"
+      layout:decorate="~{layout/base-portal}">
+<head>
+    <title>Quản lý Chuỗi Bưu cục (Hub)</title>
+</head>
+<body>
+<h5 layout:fragment="page-title"><i class="bi bi-buildings me-2"></i>Quản lý Chuỗi Bưu cục & Kho trung chuyển</h5>
+
+<div layout:fragment="content">
+    <div class="d-flex justify-content-between align-items-center mb-3">
+        <div class="text-muted small">Tổng cộng <strong th:text="${#lists.size(hubs)}">0</strong> bưu cục / kho trung chuyển trong chuỗi UTEExpress</div>
+        <button type="button" class="btn btn-ute-orange btn-sm" data-bs-toggle="modal" data-bs-target="#hubModal" onclick="resetHubModal()">
+            <i class="bi bi-plus-lg me-1"></i>Thêm Bưu cục mới
+        </button>
+    </div>
+
+    <div class="card">
+        <div class="table-responsive">
+            <table class="table table-hover align-middle mb-0">
+                <thead class="table-light">
+                <tr>
+                    <th>Mã Hub</th>
+                    <th>Tên Bưu cục / Kho</th>
+                    <th>Loại hình</th>
+                    <th>Khu vực</th>
+                    <th>Địa chỉ & Hotline</th>
+                    <th>Trạng thái</th>
+                    <th class="text-end">Thao tác</th>
+                </tr>
+                </thead>
+                <tbody>
+                <tr th:each="hub : ${hubs}">
+                    <td><span class="badge bg-primary-subtle text-primary font-mono fs-6" th:text="${hub.code}">HCM-TD01</span></td>
+                    <td class="fw-semibold" th:text="${hub.name}">Bưu cục Thủ Đức</td>
+                    <td>
+                        <span th:if="${hub.type.name() == 'SORTING_HUB'}" class="badge bg-warning-subtle text-warning-emphasis" th:text="${hub.type.label}">Kho</span>
+                        <span th:if="${hub.type.name() == 'POST_OFFICE'}" class="badge bg-info-subtle text-info-emphasis" th:text="${hub.type.label}">Bưu cục</span>
+                    </td>
+                    <td>
+                        <div class="fw-medium" th:text="${hub.province}">TP. Hồ Chí Minh</div>
+                        <small class="text-muted" th:text="${hub.district}">TP. Thủ Đức</small>
+                    </td>
+                    <td>
+                        <div class="small" th:text="${hub.address}">01 Võ Văn Ngân</div>
+                        <small class="text-muted font-mono"><i class="bi bi-telephone me-1"></i><span th:text="${hub.phone}">028</span></small>
+                    </td>
+                    <td>
+                        <span th:if="${hub.active}" class="badge bg-success-subtle text-success">Đang hoạt động</span>
+                        <span th:unless="${hub.active}" class="badge bg-secondary-subtle text-secondary">Tạm ngưng</span>
+                    </td>
+                    <td class="text-end">
+                        <button type="button" class="btn btn-outline-primary btn-sm me-1"
+                                th:attr="data-id=${hub.id},data-code=${hub.code},data-name=${hub.name},data-type=${hub.type.name()},data-province=${hub.province},data-district=${hub.district},data-address=${hub.address},data-phone=${hub.phone}"
+                                onclick="editHub(this)">
+                            <i class="bi bi-pencil"></i> Sửa
+                        </button>
+                        <form th:action="@{/admin/hubs/{id}/toggle-active(id=${hub.id})}" method="post" class="d-inline">
+                            <button type="submit" class="btn btn-sm"
+                                    th:classappend="${hub.active} ? 'btn-outline-danger' : 'btn-outline-success'">
+                                <i class="bi" th:classappend="${hub.active} ? 'bi-pause-circle' : 'bi-play-circle'"></i>
+                                <span th:text="${hub.active} ? 'Tạm ngưng' : 'Kích hoạt'"></span>
+                            </button>
+                        </form>
+                    </td>
+                </tr>
+                </tbody>
+            </table>
+        </div>
+    </div>
+
+    <!-- Create / Edit Hub Modal -->
+    <div class="modal fade" id="hubModal" tabindex="-1">
+        <div class="modal-dialog modal-lg">
+            <form th:action="@{/admin/hubs}" method="post" class="modal-content">
+                <div class="modal-header">
+                    <h5 class="modal-title fw-bold text-primary" id="hubModalTitle">Thêm Bưu cục mới</h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+                </div>
+                <div class="modal-body">
+                    <input type="hidden" name="id" id="hubId">
+                    <div class="row g-3">
+                        <div class="col-md-4">
+                            <label class="form-label fw-semibold">Mã định tuyến (Routing Code)</label>
+                            <input type="text" name="code" id="hubCode" class="form-control font-mono" placeholder="VD: CT-NK01" required>
+                        </div>
+                        <div class="col-md-5">
+                            <label class="form-label fw-semibold">Tên Bưu cục / Kho</label>
+                            <input type="text" name="name" id="hubName" class="form-control" placeholder="Bưu cục Ninh Kiều" required>
+                        </div>
+                        <div class="col-md-3">
+                            <label class="form-label fw-semibold">Loại hình</label>
+                            <select name="type" id="hubType" class="form-select" required>
+                                <option th:each="t : ${hubTypes}" th:value="${t.name()}" th:text="${t.label}"></option>
+                            </select>
+                        </div>
+                        <div class="col-md-6">
+                            <label class="form-label fw-semibold">Tỉnh / Thành phố</label>
+                            <input type="text" name="province" id="hubProvince" class="form-control" placeholder="VD: Cần Thơ" required>
+                        </div>
+                        <div class="col-md-6">
+                            <label class="form-label fw-semibold">Quận / Huyện / TP trực thuộc</label>
+                            <input type="text" name="district" id="hubDistrict" class="form-control" placeholder="VD: Quận Ninh Kiều" required>
+                        </div>
+                        <div class="col-md-8">
+                            <label class="form-label fw-semibold">Địa chỉ chi tiết</label>
+                            <input type="text" name="address" id="hubAddress" class="form-control" required>
+                        </div>
+                        <div class="col-md-4">
+                            <label class="form-label fw-semibold">Hotline</label>
+                            <input type="text" name="phone" id="hubPhone" class="form-control" required>
+                        </div>
+                    </div>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-light" data-bs-dismiss="modal">Hủy</button>
+                    <button type="submit" class="btn btn-ute-navy"><i class="bi bi-save me-1"></i>Lưu thông tin</button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+
+<th:block layout:fragment="scripts">
+    <script>
+        function resetHubModal() {
+            document.getElementById('hubModalTitle').textContent = 'Thêm Bưu cục mới';
+            document.getElementById('hubId').value = '';
+            document.getElementById('hubCode').value = '';
+            document.getElementById('hubName').value = '';
+            document.getElementById('hubType').value = 'POST_OFFICE';
+            document.getElementById('hubProvince').value = '';
+            document.getElementById('hubDistrict').value = '';
+            document.getElementById('hubAddress').value = '';
+            document.getElementById('hubPhone').value = '';
+        }
+        function editHub(btn) {
+            document.getElementById('hubModalTitle').textContent = 'Cập nhật Bưu cục ' + btn.dataset.code;
+            document.getElementById('hubId').value = btn.dataset.id;
+            document.getElementById('hubCode').value = btn.dataset.code;
+            document.getElementById('hubName').value = btn.dataset.name;
+            document.getElementById('hubType').value = btn.dataset.type;
+            document.getElementById('hubProvince').value = btn.dataset.province;
+            document.getElementById('hubDistrict').value = btn.dataset.district;
+            document.getElementById('hubAddress').value = btn.dataset.address;
+            document.getElementById('hubPhone').value = btn.dataset.phone;
+            new bootstrap.Modal(document.getElementById('hubModal')).show();
+        }
+    </script>
+</th:block>
+</body>
+</html>

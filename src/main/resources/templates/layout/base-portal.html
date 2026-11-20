@@ -76,9 +76,10 @@
         <!-- Topbar -->
         <header class="portal-topbar d-flex align-items-center justify-content-between">
             <div class="d-flex align-items-center gap-3">
-                <a th:href="@{/}" class="btn btn-sm btn-outline-primary d-lg-none">
-                    <i class="bi bi-house"></i>
-                </a>
+                <button class="btn btn-sm btn-outline-primary d-lg-none" type="button"
+                        data-bs-toggle="offcanvas" data-bs-target="#mobilePortalSidebar" aria-controls="mobilePortalSidebar">
+                    <i class="bi bi-list fs-5"></i>
+                </button>
                 <h5 class="mb-0 fw-bold text-primary" layout:fragment="page-title">Bảng điều khiển</h5>
             </div>
 
@@ -140,6 +141,55 @@
 
             <div layout:fragment="content"></div>
         </div>
+    </div>
+</div>
+
+<!-- Mobile Offcanvas Sidebar (Bootstrap 5 Responsive) -->
+<div class="offcanvas offcanvas-start text-white d-lg-none" tabindex="-1" id="mobilePortalSidebar"
+     style="width: 270px; background: linear-gradient(180deg, var(--ute-navy) 0%, var(--ute-navy-dark) 100%);">
+    <div class="offcanvas-header border-bottom border-light border-opacity-25">
+        <a th:href="@{/}" class="text-white text-decoration-none fw-bold fs-5 d-flex align-items-center gap-2">
+            <i class="bi bi-box-seam-fill text-warning fs-4"></i>
+            <span>UTE<span class="brand-badge">Express</span></span>
+        </a>
+        <button type="button" class="btn-close btn-close-white" data-bs-dismiss="offcanvas"></button>
+    </div>
+    <div class="offcanvas-body portal-sidebar w-100 p-3" style="background: transparent;">
+        <nav class="nav flex-column">
+            <div sec:authorize="hasRole('CUSTOMER')">
+                <div class="text-uppercase small text-white-50 fw-semibold px-2 mb-2">Cổng Khách hàng</div>
+                <a class="nav-link" th:href="@{/customer}"><i class="bi bi-grid-1x2"></i>Tổng quan</a>
+                <a class="nav-link" th:href="@{/customer/shipments/new}"><i class="bi bi-plus-circle-fill text-warning"></i>Tạo vận đơn mới</a>
+                <a class="nav-link" th:href="@{/customer/shipments}"><i class="bi bi-box-seam"></i>Quản lý vận đơn</a>
+                <a class="nav-link" th:href="@{/customer/addresses}"><i class="bi bi-journal-bookmark"></i>Sổ địa chỉ</a>
+                <a class="nav-link" th:href="@{/customer/cod}"><i class="bi bi-cash-coin"></i>Đối soát COD</a>
+                <a class="nav-link" th:href="@{/customer/profile}"><i class="bi bi-person-vcard"></i>Hồ sơ & Ngân hàng</a>
+            </div>
+            <div sec:authorize="hasRole('STAFF')">
+                <div class="text-uppercase small text-white-50 fw-semibold px-2 mb-2">Vận hành Bưu cục</div>
+                <a class="nav-link" th:href="@{/staff}"><i class="bi bi-speedometer2"></i>Tổng quan Bưu cục</a>
+                <a class="nav-link" th:href="@{/staff/shipments}"><i class="bi bi-diagram-3"></i>Điều phối Vận đơn</a>
+                <a class="nav-link" th:href="@{/staff/cod}"><i class="bi bi-wallet2"></i>Thu tiền COD Shipper</a>
+            </div>
+            <div sec:authorize="hasRole('SHIPPER')">
+                <div class="text-uppercase small text-white-50 fw-semibold px-2 mb-2">Cổng Giao nhận</div>
+                <a class="nav-link" th:href="@{/shipper/tasks}"><i class="bi bi-list-check"></i>Tác vụ Lấy & Giao</a>
+                <a class="nav-link" th:href="@{/shipper/cod}"><i class="bi bi-cash-stack"></i>Tiền COD đang giữ</a>
+            </div>
+            <div sec:authorize="hasRole('ADMIN')">
+                <div class="text-uppercase small text-white-50 fw-semibold px-2 mb-2">Quản trị Chuỗi</div>
+                <a class="nav-link" th:href="@{/admin}"><i class="bi bi-bar-chart-line"></i>Dashboard Thống kê</a>
+                <a class="nav-link" th:href="@{/admin/hubs}"><i class="bi bi-buildings"></i>Chuỗi Bưu cục (Hub)</a>
+                <a class="nav-link" th:href="@{/admin/services}"><i class="bi bi-tags"></i>Gói dịch vụ & Giá</a>
+                <a class="nav-link" th:href="@{/admin/users}"><i class="bi bi-people"></i>Quản lý Tài khoản</a>
+                <a class="nav-link" th:href="@{/admin/cod-settlements}"><i class="bi bi-receipt-cutoff"></i>Duyệt Đối soát COD</a>
+                <hr class="border-light opacity-25 my-2">
+                <a class="nav-link" th:href="@{/staff/shipments}"><i class="bi bi-truck"></i>Giám sát Vận đơn</a>
+            </div>
+            <hr class="border-light opacity-25 my-3">
+            <a class="nav-link" th:href="@{/tracking}"><i class="bi bi-search"></i>Tra cứu Công khai</a>
+            <a class="nav-link" th:href="@{/estimate}"><i class="bi bi-calculator"></i>Ước tính Cước</a>
+        </nav>
     </div>
 </div>
 

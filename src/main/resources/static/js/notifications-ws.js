@@ -203,8 +203,30 @@
         } catch (e) {}
     }
 
+    function bindNotificationItemClicks() {
+        const listEl = document.getElementById('notificationDropdownList');
+        if (!listEl) return;
+
+        listEl.addEventListener('click', function (e) {
+            const itemEl = e.target.closest('.notification-item');
+            if (!itemEl) return;
+            const id = itemEl.getAttribute('data-id');
+            if (id && itemEl.classList.contains('fw-semibold')) {
+                itemEl.classList.remove('bg-light', 'fw-semibold');
+                updateBadge(unreadCount - 1);
+                fetch('/api/v1/notifications/' + encodeURIComponent(id) + '/read', {
+                    method: 'POST',
+                    headers: { 'Accept': 'application/json' },
+                    credentials: 'same-origin',
+                    keepalive: true
+                }).catch(function () {});
+            }
+        });
+    }
+
     function init() {
         bindMarkAllReadButton();
+        bindNotificationItemClicks();
         fetchInitialNotifications();
         connectWebSocket();
     }

@@ -361,7 +361,8 @@ public class CodSettlementService {
         Specification<Shipment> spec = (root, query, cb) -> cb.and(
                 cb.equal(root.get("customer").get("id"), customerId),
                 cb.equal(root.get("status"), ShipmentStatus.DELIVERED),
-                root.get("codStatus").in(PENDING_COD_STATUSES)
+                root.get("codStatus").in(PENDING_COD_STATUSES),
+                cb.isNull(root.get("settlement"))
         );
         return shipmentRepository.findAll(spec, Sort.by(Sort.Direction.DESC, "deliveredAt"));
     }

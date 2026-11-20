@@ -1,0 +1,171 @@
+<!DOCTYPE html>
+<html lang="vi"
+      xmlns:th="http://www.thymeleaf.org"
+      xmlns:layout="http://www.ultraq.net.nz/thymeleaf/layout"
+      layout:decorate="~{layout/base-portal}">
+<head>
+    <title>Tiền COD đang giữ</title>
+</head>
+<body>
+<h5 layout:fragment="page-title"><i class="bi bi-cash-stack me-2"></i>Tiền COD đang giữ</h5>
+
+<div layout:fragment="content">
+    <!-- Top Shipper Header -->
+    <div class="card mb-4 border-0 shadow-sm">
+        <div class="card-body py-3 px-4 d-flex flex-wrap align-items-center justify-content-between gap-3">
+            <div>
+                <div class="small text-muted">Nhân viên Giao nhận (Shipper)</div>
+                <div class="fw-bold text-primary fs-5">
+                    <span th:text="${shipper.fullName}">Văn Hùng</span>
+                    <span class="badge bg-warning-subtle text-warning-emphasis font-mono ms-2 fs-6"
+                          th:if="${shipper.hub != null}"
+                          th:text="${shipper.hub.code + ' — ' + shipper.hub.name}">HCM-TD01</span>
+                </div>
+            </div>
+            <a th:href="@{/shipper/tasks}" class="btn btn-outline-primary btn-sm px-3">
+                <i class="bi bi-arrow-left me-1"></i>Quay lại Tác vụ Lấy &amp; Giao
+            </a>
+        </div>
+    </div>
+
+    <!-- 3 Summary KPI Cards -->
+    <div class="row row-cols-1 row-cols-md-3 g-3 mb-4">
+        <div class="col">
+            <div class="card h-100 border-warning-subtle">
+                <div class="card-body d-flex align-items-center justify-content-between gap-3">
+                    <div>
+                        <div class="small text-muted fw-semibold text-uppercase">Tổng tiền mặt phải nộp về Bưu cục</div>
+                        <div class="fs-3 fw-bold money-mono mt-1" style="color: #EA580C;"
+                             th:text="${#numbers.formatDecimal(totalCashHeld, 1, 'POINT', 0, 'COMMA') + ' đ'}">0 đ</div>
+                        <div class="small text-muted mt-1">Gồm tiền COD + cước thu người nhận (nếu có)</div>
+                    </div>
+                    <div class="rounded-3 p-3" style="background-color: #FFF7ED; color: #EA580C;">
+                        <i class="bi bi-cash-stack fs-3"></i>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <div class="col">
+            <div class="card h-100">
+                <div class="card-body d-flex align-items-center justify-content-between gap-3">
+                    <div>
+                        <div class="small text-muted fw-semibold text-uppercase">Tổng tiền thu hộ COD</div>
+                        <div class="fs-3 fw-bold money-mono text-primary mt-1"
+                             th:text="${#numbers.formatDecimal(totalCodAmount, 1, 'POINT', 0, 'COMMA') + ' đ'}">0 đ</div>
+                        <div class="small text-muted mt-1">Tiền hàng thu hộ cho chủ shop</div>
+                    </div>
+                    <div class="rounded-3 p-3 bg-primary-subtle text-primary">
+                        <i class="bi bi-coin fs-3"></i>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <div class="col">
+            <div class="card h-100">
+                <div class="card-body d-flex align-items-center justify-content-between gap-3">
+                    <div>
+                        <div class="small text-muted fw-semibold text-uppercase">Số đơn đang giữ tiền</div>
+                        <div class="fs-3 fw-bold font-mono text-dark mt-1" th:text="${#lists.size(heldShipments)}">0</div>
+                        <div class="small text-muted mt-1">Trạng thái: <span class="fw-semibold text-warning-emphasis">Shipper đang giữ</span></div>
+                    </div>
+                    <div class="rounded-3 p-3 bg-warning-subtle text-warning-emphasis">
+                        <i class="bi bi-box-seam fs-3"></i>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Reminder Notice -->
+    <div th:if="${!#lists.isEmpty(heldShipments)}" class="alert alert-info d-flex align-items-center gap-2 shadow-sm mb-4">
+        <i class="bi bi-info-circle-fill fs-5"></i>
+        <div class="small">
+            Vui lòng bàn giao đủ số tiền mặt <strong class="money-mono"
+                th:text="${#numbers.formatDecimal(totalCashHeld, 1, 'POINT', 0, 'COMMA') + ' đ'}">0 đ</strong>
+            cho Nhân viên Bưu cục
+            <strong th:text="${shipper.hub != null ? shipper.hub.name + ' (' + shipper.hub.code + ')' : 'phụ trách'}"></strong>
+            vào cuối ca để xác nhận hoàn tất nộp tiền COD.
+        </div>
+    </div>
+
+    <!-- Held Shipments Table -->
+    <div class="card">
+        <div class="card-header py-3 d-flex flex-wrap align-items-center justify-content-between gap-2">
+            <span>
+                <i class="bi bi-receipt text-primary me-2"></i>Danh sách vận đơn đã giao chưa nộp tiền COD
+            </span>
+            <span class="badge rounded-pill bg-warning-subtle text-warning-emphasis"
+                  th:text="${#lists.size(heldShipments) + ' vận đơn'}">0 vận đơn</span>
+        </div>
+
+        <div th:if="${#lists.isEmpty(heldShipments)}" class="card-body text-center py-5">
+            <i class="bi bi-check-circle-fill text-success display-4 d-block mb-3"></i>
+            <h5 class="fw-bold text-dark">Không có khoản tiền COD nào đang giữ</h5>
+            <p class="small text-muted mb-3">
+                Bạn đã hoàn tất bàn giao toàn bộ tiền thu hộ cho bưu cục hoặc chưa có đơn giao thành công có thu tiền.
+            </p>
+            <a th:href="@{/shipper/tasks(tab='delivery')}" class="btn btn-ute-navy btn-sm">
+                <i class="bi bi-bicycle me-1"></i>Xem đơn cần giao
+            </a>
+        </div>
+
+        <div th:unless="${#lists.isEmpty(heldShipments)}" class="table-responsive">
+            <table class="table table-hover align-middle mb-0">
+                <thead class="table-light">
+                <tr>
+                    <th>Mã vận đơn</th>
+                    <th>Người nhận</th>
+                    <th>Thời gian giao</th>
+                    <th class="text-end">Tiền COD</th>
+                    <th class="text-end">Cước thu người nhận</th>
+                    <th class="text-end">Tổng phải nộp</th>
+                    <th>Trạng thái COD</th>
+                </tr>
+                </thead>
+                <tbody>
+                <tr th:each="s : ${heldShipments}"
+                    th:with="collectAmt=${receiverCollectMap.get(s.id)},
+                             receiverFee=${(s.payerType != null and s.payerType.name() == 'RECEIVER' and s.paymentStatus != null and s.paymentStatus.name() != 'PAID') ? s.totalFee : 0}">
+                    <td>
+                        <div class="tracking-code fw-bold text-primary" th:text="${s.trackingCode}">UTE261118D9P4W7</div>
+                        <div class="small text-muted text-truncate" style="max-width: 220px;" th:text="${s.itemName}">Hàng hóa</div>
+                    </td>
+                    <td>
+                        <div class="fw-semibold" th:text="${s.receiverName}">Nguyễn Hải Đăng</div>
+                        <div class="small font-mono text-muted" th:text="${s.receiverPhone}">0977889900</div>
+                    </td>
+                    <td class="small font-mono text-muted text-nowrap"
+                        th:text="${s.deliveredAt != null ? #temporals.format(s.deliveredAt, 'dd/MM/yyyy HH:mm') : '—'}">19/11/2026 14:00</td>
+                    <td class="text-end money-mono fw-semibold"
+                        th:text="${#numbers.formatDecimal(s.codAmount != null ? s.codAmount : 0, 1, 'POINT', 0, 'COMMA') + ' đ'}">600.000 đ</td>
+                    <td class="text-end money-mono text-muted">
+                        <span th:text="${#numbers.formatDecimal(receiverFee != null ? receiverFee : 0, 1, 'POINT', 0, 'COMMA') + ' đ'}">0 đ</span>
+                        <div class="small" th:if="${s.payerType != null}" th:text="${s.payerType.label}">Người gửi trả</div>
+                    </td>
+                    <td class="text-end money-mono fw-bold" style="color: #EA580C;"
+                        th:text="${#numbers.formatDecimal(collectAmt != null ? collectAmt : 0, 1, 'POINT', 0, 'COMMA') + ' đ'}">600.000 đ</td>
+                    <td>
+                        <span class="badge bg-warning-subtle text-warning-emphasis border border-warning-subtle rounded-pill"
+                              th:text="${s.codStatus.label}">Shipper đang giữ</span>
+                    </td>
+                </tr>
+                </tbody>
+                <tfoot class="table-light">
+                <tr>
+                    <td colspan="3" class="fw-bold text-end">TỔNG CỘNG:</td>
+                    <td class="text-end money-mono fw-bold text-primary"
+                        th:text="${#numbers.formatDecimal(totalCodAmount, 1, 'POINT', 0, 'COMMA') + ' đ'}">0 đ</td>
+                    <td></td>
+                    <td class="text-end money-mono fw-bold fs-6" style="color: #EA580C;"
+                        th:text="${#numbers.formatDecimal(totalCashHeld, 1, 'POINT', 0, 'COMMA') + ' đ'}">0 đ</td>
+                    <td></td>
+                </tr>
+                </tfoot>
+            </table>
+        </div>
+    </div>
+</div>
+</body>
+</html>

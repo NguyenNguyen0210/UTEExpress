@@ -23,6 +23,7 @@ import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.ArgumentCaptor;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
+import org.springframework.context.ApplicationEventPublisher;
 import org.springframework.security.access.AccessDeniedException;
 
 import java.math.BigDecimal;
@@ -50,6 +51,9 @@ class ShipmentStateTransitionTest {
     @Mock
     private UserRepository userRepository;
 
+    @Mock
+    private ApplicationEventPublisher eventPublisher;
+
     private ShipmentStateMachine stateMachine;
     private ShipmentService shipmentService;
 
@@ -66,7 +70,7 @@ class ShipmentStateTransitionTest {
     @BeforeEach
     void setUp() {
         stateMachine = new ShipmentStateMachine();
-        shipmentService = new ShipmentService(shipmentRepository, trackingLogRepository, userRepository, stateMachine);
+        shipmentService = new ShipmentService(shipmentRepository, trackingLogRepository, userRepository, stateMachine, eventPublisher);
 
         hubHcm = Hub.builder()
                 .id(1L)

@@ -1,20 +1,14 @@
-/**
+﻿/**
  * UTEExpress - Client-side Order Pricing & Summary Helper
  * Supports 2-column Shipment Creation Form (/customer/shipments/new)
- * and Public Estimate Form (/estimate).
+ * and Public Estimate Form (/estimate) per 06-API-AND-ROUTES.md.
  */
 window.UteOrderPricing = (function () {
     'use strict';
 
-    const ROUTE_TYPE_LABELS = {
-        INTRA_PROVINCE: 'Nội tỉnh',
-        INTRA_REGION: 'Nội miền',
-        INTER_REGION: 'Liên miền'
-    };
-
     function formatVnd(amount) {
         const val = Number(amount) || 0;
-        return new Intl.NumberFormat('vi-VN').format(Math.round(val)) + ' đ';
+        return new Intl.NumberFormat('vi-VN').format(Math.round(val)) + ' Ä‘';
     }
 
     function setText(selector, text) {
@@ -34,7 +28,7 @@ window.UteOrderPricing = (function () {
 
     function getNumberValue(selector, fallback) {
         const el = document.querySelector(selector);
-        if (!el) return fallback;
+        if (!el || el.value === '' || el.value === null) return fallback;
         const parsed = parseFloat(el.value);
         return isNaN(parsed) || parsed < 0 ? fallback : parsed;
     }
@@ -42,7 +36,7 @@ window.UteOrderPricing = (function () {
     function init(userOptions) {
         const options = Object.assign({
             apiEndpoint: '/api/v1/public/estimate',
-            debounceMs: 250
+            debounceMs: 200
         }, userOptions || {});
 
         let debounceTimer = null;
@@ -63,7 +57,6 @@ window.UteOrderPricing = (function () {
 
         function updatePaymentControls() {
             const payerType = getCheckedValue('payerType', 'SENDER');
-            const paymentMethod = getCheckedValue('paymentMethod', 'CASH');
             const vnpayOption = document.querySelector('#vnpayMethodWrapper, [data-payment-option="VNPAY"]');
             const vnpayRadio = document.querySelector('input[name="paymentMethod"][value="VNPAY"]');
             const cashRadio = document.querySelector('input[name="paymentMethod"][value="CASH"]');
@@ -91,95 +84,85 @@ window.UteOrderPricing = (function () {
             const effectiveMethod = getCheckedValue('paymentMethod', 'CASH');
             if (submitBtnLabel) {
                 if (payerType === 'SENDER' && effectiveMethod === 'VNPAY') {
-                    submitBtnLabel.textContent = 'Tạo đơn & Thanh toán VNPay';
+                    submitBtnLabel.textContent = 'Táº¡o Ä‘Æ¡n & Thanh toÃ¡n VNPay';
                 } else {
-                    submitBtnLabel.textContent = 'Tạo vận đơn';
+                    submitBtnLabel.textContent = 'Táº¡o váº­n Ä‘Æ¡n';
                 }
-            }
-        }
-
-        function updateRouteHeader() {
-            const senderEl = document.querySelector('#senderProvince');
-            const receiverEl = document.querySelector('#receiverProvince');
-            const senderText = senderEl && senderEl.selectedOptions && senderEl.selectedOptions[0]
-                ? senderEl.selectedOptions[0].textContent.trim()
-                : (senderEl && senderEl.value ? senderEl.value : '---');
-            const receiverText = receiverEl && receiverEl.selectedOptions && receiverEl.selectedOptions[0]
-                ? receiverEl.selectedOptions[0].textContent.trim()
-                : (receiverEl && receiverEl.value ? receiverEl.value : '---');
-
-            if (senderEl && receiverEl && senderEl.value && receiverEl.value) {
-                setText('#summaryRoute', senderText + ' → ' + receiverText);
-            } else {
-                setText('#summaryRoute', 'Chưa chọn tuyến');
             }
         }
 
         function calculateAndRender() {
             updatePaymentControls();
-            updateRouteHeader();
 
             const senderProvince = (document.querySelector('#senderProvince') || {}).value || '';
             const receiverProvince = (document.querySelector('#receiverProvince') || {}).value || '';
-            const serviceTypeId = getCheckedValue('serviceTypeId', '');
+            const selectedServiceTypeId = getCheckedValue('serviceTypeId', null);
             const actualWeightKg = getNumberValue('#actualWeightKg', 0);
-            const lengthCm = getNumberValue('#lengthCm', 0);
-            const widthCm = getNumberValue('#widthCm', 0);
-            const heightCm = getNumberValue('#heightCm', 0);
+            const lengthCm = getNumberValue('#lengthCm', null);
+            const widthCm = getNumberValue('#widthCm', null);
+            const heightCm = getNumberValue('#heightCm', null);
             const codAmount = getNumberValue('#codAmount', 0);
             const payerType = getCheckedValue('payerType', 'SENDER');
 
-            if (!senderProvince || !receiverProvince || !serviceTypeId || actualWeightKg <= 0) {
+            if (!senderProvince || !receiverProvince || actualWeightKg <= 0) {
                 return;
             }
 
             const payload = {
-                senderProvinceCode: senderProvince,
-                receiverProvinceCode: receiverProvince,
-                serviceTypeId: Number(serviceTypeId) || serviceTypeId,
+                senderProvince: senderProvince,
+                receiverProvince: receiverProvince,
                 actualWeightKg: actualWeightKg,
-                lengthCm: lengthCm > 0 ? lengthCm : 10,
-                widthCm: widthCm > 0 ? widthCm : 10,
-                heightCm: heightCm > 0 ? heightCm : 10,
-                codAmount: codAmount
+                lengthCm: lengthCm && lengthCm > 0 ? Math.round(lengthCm) : null,
+                widthCm: widthCm && widthCm > 0 ? Math.round(widthCm) : null,
+                heightCm: heightCm && heightCm > 0 ? Math.round(heightCm) : null,
+                codAmount: Math.round(codAmount || 0),
+                serviceTypeId: selectedServiceTypeId ? Number(selectedServiceTypeId) : null
             };
-
-            const csrfTokenMeta = document.querySelector('meta[name="_csrf"]');
-            const csrfHeaderMeta = document.querySelector('meta[name="_csrf_header"]');
-            const headers = {
-                'Content-Type': 'application/json',
-                'Accept': 'application/json'
-            };
-            if (csrfTokenMeta && csrfHeaderMeta) {
-                headers[csrfHeaderMeta.getAttribute('content')] = csrfTokenMeta.getAttribute('content');
-            }
 
             fetch(options.apiEndpoint, {
                 method: 'POST',
-                headers: headers,
+                headers: {
+                    'Content-Type': 'application/json',
+                    'Accept': 'application/json'
+                },
                 body: JSON.stringify(payload)
             })
                 .then(function (res) {
                     if (!res.ok) throw new Error('Estimate request failed: ' + res.status);
                     return res.json();
                 })
-                .then(function (json) {
-                    const data = (json && json.data) ? json.data : json;
+                .then(function (data) {
                     if (!data) return;
 
-                    const routeTypeLabel = ROUTE_TYPE_LABELS[data.routeType] || data.routeTypeLabel || data.routeType || '---';
-                    const chargeableWeight = data.chargeableWeightKg !== undefined ? data.chargeableWeightKg : actualWeightKg;
-                    const shippingFee = Number(data.shippingFee || data.totalShippingFee || 0);
-                    const codFee = Number(data.codFee || 0);
-                    const totalFee = Number(data.totalFee !== undefined ? data.totalFee : (shippingFee + codFee));
-                    const receiverCollect = payerType === 'RECEIVER' ? (codAmount + totalFee) : codAmount;
+                    const originHub = data.originHubCode || senderProvince;
+                    const destHub = data.destHubCode || receiverProvince;
+                    setText('#summaryRoute', originHub + ' â†’ ' + destHub);
+                    setText('#summaryRouteType', data.interProvince ? 'LiÃªn tá»‰nh' : 'Ná»™i vÃ¹ng');
+                    setText('#summaryVolumetricWeight', Number(data.volumetricWeightKg || 0).toFixed(2) + ' kg');
+                    setText('#summaryChargeableWeight', Number(data.chargeableWeightKg || actualWeightKg).toFixed(2) + ' kg');
 
-                    setText('#summaryRouteType', routeTypeLabel);
-                    setText('#summaryChargeableWeight', Number(chargeableWeight).toFixed(2) + ' kg');
-                    setText('#summaryShippingFee', formatVnd(shippingFee));
-                    setText('#summaryCodFee', formatVnd(codFee));
-                    setText('#summaryTotalFee', formatVnd(totalFee));
-                    setText('#summaryReceiverCollect', formatVnd(receiverCollect));
+                    const opts = Array.isArray(data.options) ? data.options : [];
+                    let chosen = null;
+                    if (selectedServiceTypeId && opts.length > 0) {
+                        chosen = opts.find(function (o) {
+                            return String(o.serviceTypeId) === String(selectedServiceTypeId);
+                        }) || opts[0];
+                    } else if (opts.length > 0) {
+                        chosen = opts[0];
+                    }
+
+                    if (chosen) {
+                        const shippingFee = Number(chosen.shippingFee || 0);
+                        const codFee = Number(chosen.codFee || 0);
+                        const totalFee = Number(chosen.totalFee !== undefined ? chosen.totalFee : (shippingFee + codFee));
+                        const receiverCollect = payerType === 'RECEIVER' ? (codAmount + totalFee) : codAmount;
+
+                        setText('#summaryShippingFee', formatVnd(shippingFee));
+                        setText('#summaryCodFee', formatVnd(codFee));
+                        setText('#summaryTotalFee', formatVnd(totalFee));
+                        setText('#summaryReceiverCollect', formatVnd(receiverCollect));
+                        setText('#summaryEstimatedDays', chosen.estimatedDays || '');
+                    }
 
                     if (typeof options.onEstimateSuccess === 'function') {
                         options.onEstimateSuccess(data);
@@ -194,7 +177,6 @@ window.UteOrderPricing = (function () {
 
         function scheduleCalculate() {
             updatePaymentControls();
-            updateRouteHeader();
             if (debounceTimer) clearTimeout(debounceTimer);
             debounceTimer = setTimeout(calculateAndRender, options.debounceMs);
         }
@@ -207,7 +189,6 @@ window.UteOrderPricing = (function () {
         });
 
         updatePaymentControls();
-        updateRouteHeader();
         calculateAndRender();
 
         return {
@@ -227,3 +208,4 @@ window.UteOrderPricing = (function () {
         formatVnd: formatVnd
     };
 })();
+

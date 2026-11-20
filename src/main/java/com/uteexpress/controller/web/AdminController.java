@@ -1,6 +1,7 @@
 package com.uteexpress.controller.web;
 
 import com.uteexpress.dto.admin.CreateUserRequest;
+import com.uteexpress.dto.admin.DashboardChartsResponse;
 import com.uteexpress.dto.admin.HubFormRequest;
 import com.uteexpress.dto.admin.ServiceTypeFormRequest;
 import com.uteexpress.entity.Hub;
@@ -9,11 +10,13 @@ import com.uteexpress.entity.User;
 import com.uteexpress.enums.HubType;
 import com.uteexpress.enums.Role;
 import com.uteexpress.security.CustomUserDetails;
+import com.uteexpress.service.DashboardService;
 import com.uteexpress.service.HubService;
 import com.uteexpress.service.ServiceTypeService;
 import com.uteexpress.service.UserService;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
+import org.springframework.format.annotation.DateTimeFormat;
 import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import org.springframework.stereotype.Controller;
 import org.springframework.ui.Model;
@@ -21,18 +24,28 @@ import org.springframework.validation.BindingResult;
 import org.springframework.web.bind.annotation.*;
 import org.springframework.web.servlet.mvc.support.RedirectAttributes;
 
+import java.time.LocalDate;
+
 @Controller
 @RequestMapping("/admin")
 @RequiredArgsConstructor
 public class AdminController {
 
+    private final DashboardService dashboardService;
     private final HubService hubService;
     private final ServiceTypeService serviceTypeService;
     private final UserService userService;
 
-    @GetMapping
-    public String adminIndex() {
-        return "redirect:/admin/hubs";
+    @GetMapping({"", "/"})
+    public String adminDashboard(
+            @RequestParam(required = false) @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate from,
+            @RequestParam(required = false) @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate to,
+            Model model) {
+        DashboardChartsResponse summary = dashboardService.getDashboardCharts(from, to);
+        model.addAttribute("summary", summary);
+        model.addAttribute("fromDate", summary.fromDate());
+        model.addAttribute("toDate", summary.toDate());
+        return "admin/dashboard";
     }
 
     // ==================== HUB CRUD ====================

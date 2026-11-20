@@ -1,0 +1,238 @@
+/* ============================================================
+   UTEExpress — Custom Design System on Bootstrap 5.3
+   Brand Primary: #0D47A1 (Navy) | Accent CTA: #F97316 (Orange)
+   ============================================================ */
+@import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@500;600;700&display=swap');
+
+:root {
+    --ute-navy: #0D47A1;
+    --ute-navy-dark: #09357A;
+    --ute-orange: #F97316;
+    --ute-orange-hover: #EA580C;
+    --ute-bg: #F4F6F9;
+    --ute-card-border: #E5E7EB;
+    --bs-primary: #0D47A1;
+    --bs-primary-rgb: 13, 71, 161;
+    --bs-body-font-family: 'Inter', system-ui, -apple-system, sans-serif;
+    --bs-body-bg: #F4F6F9;
+}
+
+body {
+    font-family: 'Inter', system-ui, -apple-system, sans-serif;
+    background-color: var(--ute-bg);
+    color: #1F2937;
+    min-height: 100vh;
+    display: flex;
+    flex-direction: column;
+}
+
+.font-mono,
+.tracking-code,
+.routing-code,
+.money-mono {
+    font-family: 'JetBrains Mono', ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace;
+}
+
+/* Navbar & Brand */
+.navbar-ute {
+    background: linear-gradient(135deg, var(--ute-navy) 0%, var(--ute-navy-dark) 100%);
+    box-shadow: 0 2px 10px rgba(13, 71, 161, 0.15);
+}
+
+.brand-badge {
+    background-color: var(--ute-orange);
+    color: #fff;
+    padding: 0.2rem 0.5rem;
+    border-radius: 6px;
+    font-weight: 700;
+}
+
+/* Buttons */
+.btn-ute-orange {
+    background-color: var(--ute-orange);
+    border-color: var(--ute-orange);
+    color: #ffffff;
+    font-weight: 600;
+}
+
+.btn-ute-orange:hover,
+.btn-ute-orange:focus {
+    background-color: var(--ute-orange-hover);
+    border-color: var(--ute-orange-hover);
+    color: #ffffff;
+}
+
+.btn-ute-navy {
+    background-color: var(--ute-navy);
+    border-color: var(--ute-navy);
+    color: #ffffff;
+    font-weight: 600;
+}
+
+.btn-ute-navy:hover,
+.btn-ute-navy:focus {
+    background-color: var(--ute-navy-dark);
+    border-color: var(--ute-navy-dark);
+    color: #ffffff;
+}
+
+/* Cards */
+.card {
+    border: 1px solid var(--ute-card-border);
+    border-radius: 10px;
+    box-shadow: 0 1px 3px rgba(0, 0, 0, 0.04);
+}
+
+.card-header {
+    background-color: #ffffff;
+    border-bottom: 1px solid var(--ute-card-border);
+    font-weight: 600;
+    border-top-left-radius: 10px !important;
+    border-top-right-radius: 10px !important;
+}
+
+/* Status Badges (07-UI-UX-SPEC.md Section 1.2) */
+.badge-out-for-delivery {
+    background-color: #FFF7ED !important;
+    color: #C2410C !important;
+    border: 1px solid #FED7AA;
+}
+
+/* Hero Section */
+.hero-ute {
+    background: linear-gradient(135deg, #0D47A1 0%, #09357A 60%, #1E3A8A 100%);
+    color: #ffffff;
+    padding: 4rem 0;
+}
+
+/* Portal Sidebar & Layout */
+.portal-wrapper {
+    display: flex;
+    min-height: 100vh;
+    width: 100%;
+}
+
+.portal-sidebar {
+    width: 260px;
+    background: linear-gradient(180deg, var(--ute-navy) 0%, var(--ute-navy-dark) 100%);
+    color: #ffffff;
+    flex-shrink: 0;
+    display: flex;
+    flex-direction: column;
+}
+
+.portal-sidebar .nav-link {
+    color: rgba(255, 255, 255, 0.82);
+    border-radius: 8px;
+    padding: 0.65rem 1rem;
+    margin-bottom: 0.25rem;
+    font-weight: 500;
+    display: flex;
+    align-items: center;
+    gap: 0.65rem;
+    transition: all 0.15s ease;
+}
+
+.portal-sidebar .nav-link:hover,
+.portal-sidebar .nav-link.active {
+    background-color: rgba(255, 255, 255, 0.15);
+    color: #ffffff;
+}
+
+.portal-sidebar .nav-link.active {
+    border-left: 4px solid var(--ute-orange);
+    font-weight: 600;
+}
+
+.portal-main {
+    flex-grow: 1;
+    display: flex;
+    flex-direction: column;
+    min-width: 0;
+}
+
+.portal-topbar {
+    background-color: #ffffff;
+    border-bottom: 1px solid var(--ute-card-border);
+    padding: 0.75rem 1.5rem;
+    position: sticky;
+    top: 0;
+    z-index: 1020;
+}
+
+/* Tracking Timeline & Stepper */
+.tracking-timeline {
+    position: relative;
+    padding-left: 1.75rem;
+    list-style: none;
+}
+
+.tracking-timeline::before {
+    content: '';
+    position: absolute;
+    top: 0.35rem;
+    bottom: 0.35rem;
+    left: 0.55rem;
+    width: 2px;
+    background-color: #CBD5E1;
+}
+
+.tracking-timeline-item {
+    position: relative;
+    padding-bottom: 1.25rem;
+}
+
+.tracking-timeline-item::before {
+    content: '';
+    position: absolute;
+    left: -1.45rem;
+    top: 0.3rem;
+    width: 12px;
+    height: 12px;
+    border-radius: 50%;
+    background-color: #94A3B8;
+    border: 2px solid #ffffff;
+    box-shadow: 0 0 0 2px #CBD5E1;
+}
+
+.tracking-timeline-item:first-child::before {
+    background-color: var(--ute-orange);
+    box-shadow: 0 0 0 3px rgba(249, 115, 22, 0.25);
+}
+
+.timeline-flash {
+    animation: flashHighlight 2s ease-out;
+}
+
+@keyframes flashHighlight {
+    0% { background-color: #FEF3C7; }
+    100% { background-color: transparent; }
+}
+
+/* Chat CSKH Box */
+.chat-messages-box {
+    height: 360px;
+    overflow-y: auto;
+    background-color: #F8FAFC;
+    padding: 1rem;
+    border-radius: 8px;
+    border: 1px solid var(--ute-card-border);
+}
+
+.chat-bubble-own {
+    background-color: var(--ute-navy);
+    color: #ffffff;
+    border-radius: 12px 12px 2px 12px;
+    padding: 0.55rem 0.85rem;
+    max-width: 82%;
+    margin-left: auto;
+}
+
+.chat-bubble-other {
+    background-color: #E2E8F0;
+    color: #1E293B;
+    border-radius: 12px 12px 12px 2px;
+    padding: 0.55rem 0.85rem;
+    max-width: 82%;
+    margin-right: auto;
+}

@@ -26,6 +26,14 @@
         box.scrollTop = box.scrollHeight;
     }
 
+    function formatTimestamp(raw) {
+        if (!raw) return 'Vừa xong';
+        const d = new Date(raw);
+        if (isNaN(d.getTime())) return String(raw);
+        const pad = function (n) { return n < 10 ? '0' + n : String(n); };
+        return pad(d.getHours()) + ':' + pad(d.getMinutes()) + ' ' + pad(d.getDate()) + '/' + pad(d.getMonth() + 1);
+    }
+
     function buildChatBubbleHtml(msg) {
         const isOwn = activeUserId !== null &&
             activeUserId !== undefined &&
@@ -36,14 +44,14 @@
         const senderName = escapeHtml(msg.senderName || (isOwn ? 'Bạn' : 'Người dùng'));
         const senderRole = msg.senderRole ? `<span class="badge bg-secondary ms-1" style="font-size: 0.65rem;">${escapeHtml(msg.senderRole)}</span>` : '';
         const content = escapeHtml(msg.content || '');
-        const createdAt = escapeHtml(msg.createdAt || 'Vừa xong');
+        const createdAt = escapeHtml(formatTimestamp(msg.createdAt));
 
         return `
             <div class="d-flex ${alignClass} mb-2 chat-message-item" data-message-id="${escapeHtml(msg.id || '')}">
-                <div class="p-2 px-3 rounded-3 shadow-sm ${bubbleClass}" style="max-width: 78%;">
-                    <div class="d-flex justify-content-between align-items-center mb-1 gap-2">
+                <div class="p-2 px-3 rounded-3 shadow-sm ${bubbleClass}" style="max-width: 85%;">
+                    <div class="d-flex justify-content-between align-items-center mb-1 gap-2 flex-wrap">
                         <small class="fw-bold ${isOwn ? 'text-white-50' : 'text-primary'}">${senderName}${senderRole}</small>
-                        <small class="${isOwn ? 'text-white-50' : 'text-muted'}" style="font-size: 0.7rem;">${createdAt}</small>
+                        <small class="${isOwn ? 'text-white-50' : 'text-muted'} text-nowrap font-mono" style="font-size: 0.7rem;">${createdAt}</small>
                     </div>
                     <div class="small text-break">${content}</div>
                 </div>

@@ -8,7 +8,7 @@ window.UteOrderPricing = (function () {
 
     function formatVnd(amount) {
         const val = Number(amount) || 0;
-        return new Intl.NumberFormat('vi-VN').format(Math.round(val)) + ' Ä‘';
+        return new Intl.NumberFormat('vi-VN').format(Math.round(val)) + ' đ';
     }
 
     function setText(selector, text) {
@@ -84,9 +84,9 @@ window.UteOrderPricing = (function () {
             const effectiveMethod = getCheckedValue('paymentMethod', 'CASH');
             if (submitBtnLabel) {
                 if (payerType === 'SENDER' && effectiveMethod === 'VNPAY') {
-                    submitBtnLabel.textContent = 'Táº¡o Ä‘Æ¡n & Thanh toÃ¡n VNPay';
+                    submitBtnLabel.textContent = 'Tạo đơn & Thanh toán VNPay';
                 } else {
-                    submitBtnLabel.textContent = 'Táº¡o váº­n Ä‘Æ¡n';
+                    submitBtnLabel.textContent = 'Tạo vận đơn';
                 }
             }
         }
@@ -136,8 +136,8 @@ window.UteOrderPricing = (function () {
 
                     const originHub = data.originHubCode || senderProvince;
                     const destHub = data.destHubCode || receiverProvince;
-                    setText('#summaryRoute', originHub + ' â†’ ' + destHub);
-                    setText('#summaryRouteType', data.interProvince ? 'LiÃªn tá»‰nh' : 'Ná»™i vÃ¹ng');
+                    setText('#summaryRoute', originHub + ' → ' + destHub);
+                    setText('#summaryRouteType', data.interProvince ? 'Liên tỉnh' : 'Nội vùng');
                     setText('#summaryVolumetricWeight', Number(data.volumetricWeightKg || 0).toFixed(2) + ' kg');
                     setText('#summaryChargeableWeight', Number(data.chargeableWeightKg || actualWeightKg).toFixed(2) + ' kg');
 

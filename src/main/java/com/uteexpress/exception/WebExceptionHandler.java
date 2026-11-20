@@ -32,8 +32,8 @@ public class WebExceptionHandler {
                                       HttpServletRequest request,
                                       RedirectAttributes redirectAttributes) {
         redirectAttributes.addFlashAttribute("errorMessage", "Dung lượng file vượt quá giới hạn tối đa 5MB.");
-        String referer = request.getHeader("Referer");
-        return "redirect:" + (referer != null ? referer : "/");
+        String safeReferer = resolveSafeReferer(request);
+        return "redirect:" + (safeReferer != null ? safeReferer : "/");
     }
 
     @ExceptionHandler(BusinessException.class)
@@ -42,13 +42,33 @@ public class WebExceptionHandler {
                                  RedirectAttributes redirectAttributes,
                                  Model model,
                                  HttpServletResponse response) {
-        String referer = request.getHeader("Referer");
-        if (referer != null && !referer.isBlank()) {
+        String safeReferer = resolveSafeReferer(request);
+        if (safeReferer != null) {
             redirectAttributes.addFlashAttribute("errorMessage", ex.getMessage());
-            return "redirect:" + referer;
+            return "redirect:" + safeReferer;
         }
         response.setStatus(HttpStatus.BAD_REQUEST.value());
         model.addAttribute("errorMessage", ex.getMessage());
         return "error/500";
+    }
+
+    private String resolveSafeReferer(HttpServletRequest request) {
+        String referer = request.getHeader("Referer");
+        if (referer == null || referer.isBlank()) {
+            return null;
+        }
+        if (referer.startsWith("/") && !referer.startsWith("//")) {
+            return referer;
+        }
+        try {
+            java.net.URI uri = java.net.URI.create(referer);
+            if (uri.getHost() != null && uri.getHost().equalsIgnoreCase(request.getServerName())) {
+                String path = uri.getRawPath() != null && !uri.getRawPath().isBlank() ? uri.getRawPath() : "/";
+                return uri.getRawQuery() != null ? path + "?" + uri.getRawQuery() : path;
+            }
+        } catch (IllegalArgumentException ignored) {
+            return null;
+        }
+        return null;
     }
 }

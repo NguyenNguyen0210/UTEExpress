@@ -1,0 +1,167 @@
+<!DOCTYPE html>
+<html lang="vi"
+      xmlns:th="http://www.thymeleaf.org"
+      xmlns:layout="http://www.ultraq.net.nz/thymeleaf/layout"
+      layout:decorate="~{layout/base-portal}">
+<head>
+    <title>Hồ sơ cá nhân & Ngân hàng nhận COD</title>
+</head>
+<body>
+<h5 layout:fragment="page-title"><i class="bi bi-person-vcard me-2"></i>Hồ sơ cá nhân & Tài khoản ngân hàng nhận COD</h5>
+
+<div layout:fragment="content">
+    <div class="row g-4">
+        <!-- Left Column: Edit Profile & COD Bank Form -->
+        <div class="col-lg-8">
+            <form th:action="@{/customer/profile}" th:object="${profileForm}" method="post">
+                <!-- Card 1: Personal / Shop Info -->
+                <div class="card mb-4">
+                    <div class="card-header py-3">
+                        <i class="bi bi-person-lines-fill text-primary me-2"></i>Thông tin tài khoản Khách hàng / Chủ shop
+                    </div>
+                    <div class="card-body">
+                        <div class="row g-3">
+                            <div class="col-md-12">
+                                <label class="form-label fw-semibold">Email đăng nhập</label>
+                                <input type="email" class="form-control bg-light" th:value="${user.email}" readonly disabled>
+                                <div class="form-text">Email là định danh đăng nhập cố định của tài khoản UTEExpress.</div>
+                            </div>
+                            <div class="col-md-7">
+                                <label class="form-label fw-semibold">Họ tên / Tên cửa hàng <span class="text-danger">*</span></label>
+                                <input type="text" th:field="*{fullName}" class="form-control"
+                                       placeholder="VD: Shop Hoàng Nam Tech" maxlength="120" required>
+                            </div>
+                            <div class="col-md-5">
+                                <label class="form-label fw-semibold">Số điện thoại <span class="text-danger">*</span></label>
+                                <input type="text" th:field="*{phone}" class="form-control font-mono"
+                                       placeholder="090xxxxxxx" pattern="^0\d{9,10}$" required>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Card 2: COD Bank Account Info (GHN benchmark) -->
+                <div class="card mb-4">
+                    <div class="card-header py-3 d-flex justify-content-between align-items-center">
+                        <span><i class="bi bi-bank text-primary me-2"></i>Tài khoản Ngân hàng nhận tiền Đối soát COD</span>
+                        <span class="badge bg-info-subtle text-info-emphasis">Tự động gắn vào phiếu đối soát</span>
+                    </div>
+                    <div class="card-body">
+                        <div class="alert alert-light border small mb-3">
+                            <i class="bi bi-info-circle-fill text-primary me-1"></i>
+                            Thông tin tài khoản ngân hàng này sẽ được hiển thị tự động trên các <strong>Phiếu đối soát COD</strong> để UTEExpress chuyển khoản tiền thu hộ cho bạn sau khi cấn trừ cước phí (nếu có).
+                        </div>
+                        <div class="row g-3">
+                            <div class="col-md-6">
+                                <label class="form-label fw-semibold">Tên ngân hàng</label>
+                                <input type="text" th:field="*{bankName}" list="vnBankSuggestions" class="form-control"
+                                       placeholder="VD: Vietcombank, Techcombank, MB Bank..." maxlength="100">
+                                <datalist id="vnBankSuggestions">
+                                    <option value="Vietcombank"></option>
+                                    <option value="Techcombank"></option>
+                                    <option value="BIDV"></option>
+                                    <option value="VietinBank"></option>
+                                    <option value="MB Bank"></option>
+                                    <option value="ACB"></option>
+                                    <option value="VPBank"></option>
+                                    <option value="TPBank"></option>
+                                    <option value="Sacombank"></option>
+                                    <option value="Agribank"></option>
+                                </datalist>
+                            </div>
+                            <div class="col-md-6">
+                                <label class="form-label fw-semibold">Số tài khoản ngân hàng</label>
+                                <input type="text" th:field="*{bankAccountNumber}" class="form-control font-mono"
+                                       placeholder="VD: 1023456789" maxlength="50">
+                            </div>
+                            <div class="col-12">
+                                <label class="form-label fw-semibold">Tên chủ tài khoản</label>
+                                <input type="text" th:field="*{bankAccountHolder}" class="form-control"
+                                       placeholder="VD: HOANG VAN NAM (viết hoa không dấu như trên thẻ ngân hàng)" maxlength="120">
+                            </div>
+                        </div>
+                    </div>
+                    <div class="card-footer bg-white d-flex justify-content-end py-3">
+                        <button type="submit" class="btn btn-ute-navy px-4">
+                            <i class="bi bi-check2-circle me-1"></i>Lưu thông tin hồ sơ
+                        </button>
+                    </div>
+                </div>
+            </form>
+        </div>
+
+        <!-- Right Column: Account & Bank Card Summary -->
+        <div class="col-lg-4">
+            <!-- Account Overview Card -->
+            <div class="card mb-4">
+                <div class="card-body text-center py-4">
+                    <div class="rounded-circle bg-primary-subtle text-primary d-inline-flex align-items-center justify-content-center mb-3"
+                         style="width: 64px; height: 64px;">
+                        <i class="bi bi-person-fill fs-2"></i>
+                    </div>
+                    <h6 class="fw-bold mb-1" th:text="${user.fullName}">Shop Hoàng Nam Tech</h6>
+                    <div class="text-muted small mb-2" th:text="${user.email}">shop@uteexpress.vn</div>
+                    <div class="d-flex justify-content-center gap-2 mb-3">
+                        <span class="badge bg-primary-subtle text-primary" th:text="${user.role.label}">Khách hàng</span>
+                        <span th:if="${user.status.name() == 'ACTIVE'}" class="badge bg-success-subtle text-success">Đang hoạt động</span>
+                        <span th:unless="${user.status.name() == 'ACTIVE'}" class="badge bg-danger-subtle text-danger" th:text="${user.status.label}">Đã khóa</span>
+                    </div>
+                    <div class="border-top pt-3 text-start small">
+                        <div class="d-flex justify-content-between mb-2">
+                            <span class="text-muted">Số điện thoại:</span>
+                            <span class="font-mono fw-semibold" th:text="${user.phone}">0901234567</span>
+                        </div>
+                        <div class="d-flex justify-content-between" th:if="${user.createdAt != null}">
+                            <span class="text-muted">Ngày tham gia:</span>
+                            <span class="fw-medium" th:text="${#temporals.format(user.createdAt, 'dd/MM/yyyy')}">20/11/2026</span>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- COD Bank Card Preview -->
+            <div class="card mb-4">
+                <div class="card-header py-2">
+                    <i class="bi bi-credit-card-2-front text-warning me-2"></i>Thẻ nhận COD hiện tại
+                </div>
+                <div class="card-body">
+                    <div th:if="${user.bankName != null and !#strings.isEmpty(user.bankName) and user.bankAccountNumber != null and !#strings.isEmpty(user.bankAccountNumber)}"
+                         class="p-3 rounded-3 text-white"
+                         style="background: linear-gradient(135deg, #0D47A1 0%, #1E3A8A 100%);">
+                        <div class="d-flex justify-content-between align-items-center mb-3">
+                            <span class="small text-white-50">NGÂN HÀNG NHẬN COD</span>
+                            <i class="bi bi-bank2 fs-5 text-warning"></i>
+                        </div>
+                        <div class="fw-bold fs-6 mb-1" th:text="${user.bankName}">Vietcombank</div>
+                        <div class="font-mono fs-5 fw-bold mb-2" th:text="${user.bankAccountNumber}">1023456789</div>
+                        <div class="small text-uppercase text-white-50"
+                             th:text="${user.bankAccountHolder != null ? user.bankAccountHolder : 'CHƯA CẬP NHẬT CHỦ TK'}">
+                            HOANG VAN NAM
+                        </div>
+                    </div>
+                    <div th:unless="${user.bankName != null and !#strings.isEmpty(user.bankName) and user.bankAccountNumber != null and !#strings.isEmpty(user.bankAccountNumber)}"
+                         class="alert alert-warning small mb-0">
+                        <i class="bi bi-exclamation-circle-fill me-1"></i>
+                        Bạn chưa cấu hình tài khoản ngân hàng nhận COD. Vui lòng cập nhật để thuận tiện đối soát tiền thu hộ.
+                    </div>
+                </div>
+            </div>
+
+            <!-- Quick Links -->
+            <div class="card">
+                <div class="list-group list-group-flush">
+                    <a th:href="@{/customer/addresses}" class="list-group-item list-group-item-action d-flex justify-content-between align-items-center">
+                        <span><i class="bi bi-journal-bookmark text-primary me-2"></i>Quản lý Sổ địa chỉ</span>
+                        <i class="bi bi-chevron-right text-muted small"></i>
+                    </a>
+                    <a th:href="@{/customer/cod}" class="list-group-item list-group-item-action d-flex justify-content-between align-items-center">
+                        <span><i class="bi bi-cash-coin text-warning me-2"></i>Lịch sử Đối soát COD</span>
+                        <i class="bi bi-chevron-right text-muted small"></i>
+                    </a>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+</body>
+</html>

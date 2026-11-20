@@ -169,7 +169,7 @@ public class CustomerController {
                 return "redirect:" + payUrl;
             }
             redirectAttributes.addFlashAttribute("successMessage",
-                    "Tạo vận đơn " + saved.getTrackingCode() + " thành công! Bưu cục "
+                    "Tạo vận đơn " + saved.getTrackingCode() + " thành công! "
                             + saved.getOriginHub().getName() + " sẽ sớm điều phối lấy hàng.");
             return "redirect:/customer/shipments/" + saved.getId();
         } catch (BusinessException ex) {

@@ -31,21 +31,29 @@
         }
     }
 
+    function formatTimestamp(raw) {
+        if (!raw) return 'Vừa xong';
+        const d = new Date(raw);
+        if (isNaN(d.getTime())) return String(raw);
+        const pad = function (n) { return n < 10 ? '0' + n : String(n); };
+        return pad(d.getHours()) + ':' + pad(d.getMinutes()) + ' ' + pad(d.getDate()) + '/' + pad(d.getMonth() + 1);
+    }
+
     function buildNotificationItemHtml(item) {
         const isUnread = item.isRead === false || item.read === false || item.isRead === undefined;
         const bgClass = isUnread ? 'bg-light fw-semibold' : '';
         const title = escapeHtml(item.title || 'Thông báo hệ thống');
         const message = escapeHtml(item.message || '');
-        const createdAt = escapeHtml(item.createdAt || 'Vừa xong');
+        const createdAt = escapeHtml(formatTimestamp(item.createdAt));
         const link = item.linkUrl || item.targetUrl || '#';
 
         return `
             <a class="list-group-item list-group-item-action py-2 px-3 notification-item ${bgClass}"
                data-id="${escapeHtml(item.id || '')}"
                href="${escapeHtml(link)}">
-                <div class="d-flex justify-content-between align-items-center mb-1">
-                    <span class="small text-primary fw-bold">${title}</span>
-                    <small class="text-muted" style="font-size: 0.72rem;">${createdAt}</small>
+                <div class="d-flex justify-content-between align-items-center gap-2 mb-1">
+                    <span class="small text-primary fw-bold text-truncate">${title}</span>
+                    <small class="text-muted text-nowrap flex-shrink-0 font-mono" style="font-size: 0.72rem;">${createdAt}</small>
                 </div>
                 <div class="small text-secondary">${message}</div>
             </a>

@@ -33,6 +33,11 @@ body {
     font-family: 'JetBrains Mono', ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace;
 }
 
+.money-mono,
+.tracking-code {
+    white-space: nowrap;
+}
+
 /* Navbar & Brand */
 .navbar-ute {
     background: linear-gradient(135deg, var(--ute-navy) 0%, var(--ute-navy-dark) 100%);
@@ -43,6 +48,7 @@ body {
     background-color: var(--ute-orange);
     color: #fff;
     padding: 0.2rem 0.5rem;
+    margin-left: 0.25rem;
     border-radius: 6px;
     font-weight: 700;
 }

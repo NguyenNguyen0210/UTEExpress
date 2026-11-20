@@ -7,14 +7,15 @@
     <title>Quản lý vận đơn</title>
     <style>
         .shipment-tabs {
-            overflow-x: auto;
-            flex-wrap: nowrap;
-            scrollbar-width: thin;
+            flex-wrap: wrap;
+            gap: 0.25rem;
         }
         .shipment-tabs .nav-link {
             white-space: nowrap;
             color: #4B5563;
             font-weight: 500;
+            font-size: 0.86rem;
+            padding: 0.45rem 0.7rem;
             border-bottom: 2px solid transparent;
         }
         .shipment-tabs .nav-link.active {
@@ -218,7 +219,7 @@
                         </div>
                     </td>
                     <td>
-                        <div class="routing-code fw-semibold text-primary small">
+                        <div class="routing-code fw-semibold text-primary small text-nowrap">
                             <span th:text="${s.originHub.code}">HCM-TD01</span>
                             <i class="bi bi-arrow-right mx-1 text-warning"></i>
                             <span th:text="${s.destHub.code}">HN-CG01</span>
@@ -228,33 +229,33 @@
                             <span th:text="${s.currentHub.name}">Bưu cục Thủ Đức</span>
                         </div>
                     </td>
-                    <td class="text-end font-mono">
-                        <div class="fw-bold"
+                    <td class="text-end">
+                        <div class="fw-bold money-mono"
                              th:style="${s.codAmount != null and s.codAmount.signum() > 0} ? 'color: #F97316;' : ''"
                              th:text="${#numbers.formatDecimal(s.codAmount, 1, 'POINT', 0, 'COMMA') + ' đ'}">500.000 đ</div>
                         <span class="badge bg-light text-secondary border small fw-normal"
                               th:text="${s.codStatus.label}">Chờ thu COD</span>
                     </td>
-                    <td class="text-end font-mono">
-                        <div class="fw-semibold"
+                    <td class="text-end">
+                        <div class="fw-semibold money-mono"
                              th:text="${#numbers.formatDecimal(s.totalFee, 1, 'POINT', 0, 'COMMA') + ' đ'}">45.000 đ</div>
                         <div class="small text-muted" th:text="${s.payerType.label}">Người gửi trả</div>
                         <span class="badge small"
                               th:classappend="${s.paymentStatus.name() == 'PAID'} ? 'bg-success-subtle text-success' : (${s.paymentStatus.name() == 'REFUND_PENDING'} ? 'bg-warning-subtle text-warning-emphasis' : 'bg-light text-muted border')"
                               th:text="${s.paymentStatus.label}">Chưa thanh toán</span>
                     </td>
-                    <td>
+                    <td class="text-nowrap">
                         <span th:class="'badge rounded-pill px-2 py-1 ' + ${s.status.badgeClass}"
                               th:text="${s.status.label}">Chờ lấy hàng</span>
                     </td>
                     <td class="text-end text-nowrap">
                         <a th:href="@{/customer/shipments/{id}(id=${s.id})}"
-                           class="btn btn-sm btn-outline-primary me-1" title="Xem chi tiết vận đơn">
-                            <i class="bi bi-eye me-1"></i>Chi tiết
+                           class="btn btn-sm btn-outline-primary px-2 me-1" title="Xem chi tiết vận đơn">
+                            <i class="bi bi-eye"></i>
                         </a>
                         <a th:href="@{/shipments/{id}/waybill(id=${s.id}, size='A6')}"
                            target="_blank"
-                           class="btn btn-sm btn-outline-secondary" title="In tem PDF A6">
+                           class="btn btn-sm btn-outline-secondary px-2" title="In tem PDF A6">
                             <i class="bi bi-printer"></i>
                         </a>
                     </td>

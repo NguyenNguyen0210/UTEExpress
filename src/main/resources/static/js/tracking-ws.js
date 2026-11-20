@@ -65,6 +65,15 @@
         }
     }
 
+    function formatTimestamp(raw) {
+        if (!raw) return 'Vừa xong';
+        const d = new Date(raw);
+        if (isNaN(d.getTime())) return String(raw);
+        const pad = function (n) { return n < 10 ? '0' + n : String(n); };
+        return pad(d.getDate()) + '/' + pad(d.getMonth() + 1) + '/' + d.getFullYear()
+            + ' ' + pad(d.getHours()) + ':' + pad(d.getMinutes());
+    }
+
     function updateTimelineDom(code, payload) {
         const timelineEl = document.getElementById('timeline-' + code) ||
             document.getElementById('trackingTimelineList');
@@ -73,7 +82,7 @@
         const title = escapeHtml(payload.logTitle || payload.statusLabel || payload.status || 'Cập nhật trạng thái');
         const description = escapeHtml(payload.logDescription || payload.description || '');
         const hubName = escapeHtml(payload.currentHubName || payload.location || '');
-        const timestamp = escapeHtml(payload.timestamp || payload.createdAt || 'Vừa xong');
+        const timestamp = escapeHtml(formatTimestamp(payload.timestamp || payload.createdAt));
 
         const itemHtml = `
             <li class="tracking-timeline-item timeline-flash p-2 rounded">

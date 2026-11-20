@@ -17,7 +17,7 @@
                 <div class="card-body">
                     <div class="small text-muted fw-semibold text-uppercase">Khách chờ lập phiếu</div>
                     <div class="fs-2 fw-bold font-mono text-primary mt-1" th:text="${readyCustomerCount}">0</div>
-                    <div class="small text-muted">Có đơn <span class="font-mono">COLLECTED_BY_HUB</span> chưa đối soát</div>
+                    <div class="small text-muted">Có đơn <strong class="text-dark">Đã thu từ Shipper</strong> chưa đối soát</div>
                 </div>
             </div>
         </div>
@@ -72,7 +72,7 @@
         <div th:if="${#lists.isEmpty(readyCustomers)}" class="card-body text-center py-4 text-muted">
             <i class="bi bi-check2-all text-success fs-2 d-block mb-2"></i>
             <div class="fw-semibold text-dark">Hiện không có khách hàng nào chờ tạo phiếu đối soát COD</div>
-            <div class="small">Vận đơn cần ở trạng thái <code>DELIVERED</code> và đã được bưu cục thu tiền từ Shipper (<code>COLLECTED_BY_HUB</code>).</div>
+            <div class="small">Vận đơn cần ở trạng thái <strong>Giao thành công</strong> và đã được bưu cục thu tiền từ Shipper (<strong>Đã thu tại bưu cục</strong>).</div>
         </div>
 
         <div th:unless="${#lists.isEmpty(readyCustomers)}" class="card-body d-flex flex-column gap-3">

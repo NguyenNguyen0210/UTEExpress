@@ -12,6 +12,7 @@ import com.uteexpress.exception.BusinessException;
 import com.uteexpress.exception.ResourceNotFoundException;
 import com.uteexpress.repository.UserRepository;
 import com.uteexpress.security.CustomUserDetails;
+import com.uteexpress.service.CsvExportService;
 import com.uteexpress.service.ShipmentService;
 import com.uteexpress.service.ShipmentStateMachine;
 import com.uteexpress.service.StaffShipmentQueryService;
@@ -20,6 +21,9 @@ import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.domain.Sort;
+import org.springframework.http.HttpHeaders;
+import org.springframework.http.MediaType;
+import org.springframework.http.ResponseEntity;
 import org.springframework.security.access.AccessDeniedException;
 import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import org.springframework.stereotype.Controller;
@@ -45,6 +49,7 @@ public class StaffController {
     private final ShipmentService shipmentService;
     private final ShipmentStateMachine stateMachine;
     private final UserRepository userRepository;
+    private final CsvExportService csvExportService;
 
     private User getCurrentUser(CustomUserDetails userDetails) {
         if (userDetails == null || userDetails.getId() == null) {
@@ -84,6 +89,29 @@ public class StaffController {
         model.addAttribute("hubLabel", staffShipmentQueryService.resolveHubLabel(actor));
         model.addAttribute("actor", actor);
         return "staff/shipment-list";
+    }
+
+    @GetMapping("/shipments/export")
+    public ResponseEntity<byte[]> exportStaffShipmentsCsv(
+            @RequestParam(defaultValue = "all") String tab,
+            @RequestParam(required = false) String keyword,
+            @AuthenticationPrincipal CustomUserDetails userDetails) {
+        User actor = getCurrentUser(userDetails);
+        String activeTab = staffShipmentQueryService.normalizeTab(tab);
+        Pageable exportPage = PageRequest.of(0, 1000, Sort.by(Sort.Direction.DESC, "updatedAt"));
+        List<Shipment> shipments = staffShipmentQueryService.searchStaffShipments(actor, activeTab, keyword, exportPage)
+                .getContent();
+
+        byte[] csvBytes = csvExportService.exportShipmentsCsv(shipments);
+        String hubSuffix = (actor.getHub() != null && actor.getHub().getCode() != null)
+                ? actor.getHub().getCode()
+                : "ALL";
+        String filename = "UTEExpress-DieuPhoi-" + hubSuffix + "-" + java.time.LocalDate.now() + ".csv";
+        return ResponseEntity.ok()
+                .contentType(MediaType.parseMediaType("text/csv; charset=UTF-8"))
+                .header(HttpHeaders.CONTENT_DISPOSITION, "attachment; filename=\"" + filename + "\"")
+                .contentLength(csvBytes.length)
+                .body(csvBytes);
     }
 
     @GetMapping("/shipments/{id}")

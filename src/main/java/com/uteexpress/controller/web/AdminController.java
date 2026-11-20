@@ -6,12 +6,17 @@ import com.uteexpress.dto.admin.HubFormRequest;
 import com.uteexpress.dto.admin.ServiceTypeFormRequest;
 import com.uteexpress.entity.Hub;
 import com.uteexpress.entity.ServiceType;
+import com.uteexpress.entity.Shipment;
 import com.uteexpress.entity.User;
 import com.uteexpress.enums.HubType;
 import com.uteexpress.enums.Role;
+import com.uteexpress.exception.BusinessException;
+import com.uteexpress.exception.ResourceNotFoundException;
+import com.uteexpress.repository.UserRepository;
 import com.uteexpress.security.CustomUserDetails;
 import com.uteexpress.service.DashboardService;
 import com.uteexpress.service.HubService;
+import com.uteexpress.service.RefundService;
 import com.uteexpress.service.ServiceTypeService;
 import com.uteexpress.service.UserService;
 import jakarta.validation.Valid;
@@ -35,6 +40,8 @@ public class AdminController {
     private final HubService hubService;
     private final ServiceTypeService serviceTypeService;
     private final UserService userService;
+    private final RefundService refundService;
+    private final UserRepository userRepository;
 
     @GetMapping({"", "/"})
     public String adminDashboard(
@@ -159,5 +166,43 @@ public class AdminController {
         redirectAttributes.addFlashAttribute("successMessage",
                 "Đã cập nhật trạng thái tài khoản " + updated.getEmail() + " → " + updated.getStatus().getLabel());
         return "redirect:/admin/users";
+    }
+
+    // ==================== VNPAY REFUNDS (BR-05 COMPLETION) ====================
+    @GetMapping("/refunds")
+    public String listVnPayRefunds(Model model) {
+        java.util.List<Shipment> pendingRefunds = refundService.getPendingRefundShipments();
+        java.util.List<Shipment> completedRefunds = refundService.getCompletedRefundShipments();
+        java.math.BigDecimal pendingTotal = pendingRefunds.stream()
+                .map(Shipment::getTotalFee)
+                .filter(java.util.Objects::nonNull)
+                .reduce(java.math.BigDecimal.ZERO, java.math.BigDecimal::add);
+        java.math.BigDecimal refundedTotal = completedRefunds.stream()
+                .map(Shipment::getTotalFee)
+                .filter(java.util.Objects::nonNull)
+                .reduce(java.math.BigDecimal.ZERO, java.math.BigDecimal::add);
+
+        model.addAttribute("pendingRefunds", pendingRefunds);
+        model.addAttribute("completedRefunds", completedRefunds);
+        model.addAttribute("pendingTotal", pendingTotal);
+        model.addAttribute("refundedTotal", refundedTotal);
+        return "admin/refunds";
+    }
+
+    @PostMapping("/refunds/{id}/confirm")
+    public String confirmVnPayRefund(@PathVariable Long id,
+                                     @RequestParam(required = false) String refundRef,
+                                     @AuthenticationPrincipal CustomUserDetails currentAdmin,
+                                     RedirectAttributes redirectAttributes) {
+        User adminActor = userRepository.findById(currentAdmin.getId())
+                .orElseThrow(() -> new ResourceNotFoundException("Không tìm thấy tài khoản quản trị hiện tại"));
+        try {
+            Shipment refunded = refundService.confirmVnPayRefund(id, refundRef, adminActor);
+            redirectAttributes.addFlashAttribute("successMessage",
+                    "Đã xác nhận hoàn tiền cước VNPay cho vận đơn " + refunded.getTrackingCode() + ".");
+        } catch (BusinessException ex) {
+            redirectAttributes.addFlashAttribute("errorMessage", ex.getMessage());
+        }
+        return "redirect:/admin/refunds";
     }
 }
